@@ -15,7 +15,7 @@ reviews:
     enabled: true
     drafts: false
     base_branches:
-      - master
+      - "main"
       - "step/**"
 
   # What CodeRabbit should focus on
@@ -84,9 +84,6 @@ code_generation:
 
 # Knowledge base — CodeRabbit learns from these
 knowledge_base:
-  learnings:
-    scope: repository
-  issues:
-    scope: repository
-  pull_requests:
-    scope: repository
+  learnings: true
+  issues: true
+  pull_requests: true
