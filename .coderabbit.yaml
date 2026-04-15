@@ -1,0 +1,92 @@
+# .coderabbit.yaml — CodeRabbit configuration for Sri Basaveshwara Agro Kendra
+# See: https://docs.coderabbit.ai/getting-started/configure-coderabbit/
+
+language: en-US
+
+reviews:
+  # Review profile: assertive gives detailed, actionable feedback
+  profile: assertive
+
+  # Review all commits on every PR (not just the head)
+  request_changes_workflow: true
+
+  # Auto-review on every push to these branches
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - master
+      - "step/**"
+
+  # What CodeRabbit should focus on
+  path_instructions:
+    - path: "lib/shopify.ts"
+      instructions: |
+        This is the core Shopify GraphQL client.
+        - Verify SHOPIFY_STOREFRONT_TOKEN is never passed to the client side
+        - Check all GraphQL errors are caught and logged server-side only
+        - Ensure no query strings are inlined (all must import from lib/queries/)
+        - Verify pagination cursors are properly forwarded
+
+    - path: "app/api/**"
+      instructions: |
+        These are secure Shopify proxy routes — the browser never sees the token.
+        - Every route must call checkRateLimit() as the first operation
+        - Every user input must be Zod-validated before use
+        - Error responses must use errorResponse() from lib/api-helpers.ts — never raw Error objects
+        - Shopify GIDs must be validated with their specific regex patterns
+        - Rate limit headers (X-RateLimit-Remaining) should be present on success responses
+
+    - path: "context/CartContext.tsx"
+      instructions: |
+        Cart state manager — quantity and price math must be exact.
+        - Quantities must always be integers 1–99 (validated in reducer)
+        - Price MUST be stored in paise (integer) — never as a float
+        - All dispatch actions must go through the reducer (no direct state mutation)
+        - useCallback wrappers must be on ALL dispatch helper functions
+
+    - path: "components/**"
+      instructions: |
+        All components must meet WCAG 2.1 AA accessibility standards.
+        - Every interactive element must have min-h-[48px] and min-w-[48px]
+        - All buttons/links must have descriptive aria-label when the visible text is insufficient
+        - Images must have meaningful alt text (not just filename)
+        - No motion without respecting prefers-reduced-motion (Framer Motion handles this via its global setting)
+        - Focus rings must be visible (focus-visible:ring-2)
+
+    - path: "app/**/page.tsx"
+      instructions: |
+        Every page must have unique metadata (title and description).
+        - title must be unique per page (not just the default template)
+        - description must be 120–160 chars, keyword-rich, action-oriented
+        - Pages with dynamic content must use generateMetadata (not static metadata)
+        - All server components must validate searchParams/params with Zod before use
+
+  # Files to exclude from review (generated, config files)
+  path_filters:
+    - "!**/.next/**"
+    - "!**/node_modules/**"
+    - "!pnpm-lock.yaml"
+    - "!.prettierrc"
+    - "!*.config.mjs"
+
+chat:
+  # Allow @coderabbitai mentions in comments
+  auto_reply: true
+
+code_generation:
+  # Docstrings: TypeScript uses JSDoc, require for all exported functions
+  docstrings:
+    language: typescript
+    path_instructions:
+      - path: "lib/**"
+        instructions: "Add JSDoc comments to all exported functions describing parameters, return type, and any thrown errors."
+
+# Knowledge base — CodeRabbit learns from these
+knowledge_base:
+  learnings:
+    scope: repository
+  issues:
+    scope: repository
+  pull_requests:
+    scope: repository
