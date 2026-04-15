@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/context/CartContext";
 
 // ─── Nav links ────────────────────────────────────────────────────────────────
 
@@ -14,11 +15,11 @@ const NAV_LINKS = [
 
 // ─── Cart icon ────────────────────────────────────────────────────────────────
 
-function CartIcon({ count = 0 }: { count?: number }) {
+function CartIcon({ count = 0, onOpen }: { count?: number; onOpen: () => void }) {
   return (
-    <Link
-      href="/cart"
-      aria-label={`View cart — ${count} item${count !== 1 ? "s" : ""}`}
+    <button
+      onClick={onOpen}
+      aria-label={`Open cart — ${count} item${count !== 1 ? "s" : ""}`}
       id="navbar-cart-link"
       className="relative flex min-h-[48px] min-w-[48px] items-center justify-center rounded-md text-slate-700 transition-colors hover:text-[#166534]"
     >
@@ -48,7 +49,7 @@ function CartIcon({ count = 0 }: { count?: number }) {
           {count > 99 ? "99+" : count}
         </span>
       )}
-    </Link>
+    </button>
   );
 }
 
@@ -219,14 +220,11 @@ function MobileMenu({
 // ─── Main Navbar ──────────────────────────────────────────────────────────────
 
 interface NavbarProps {
-  cartItemCount?: number;
   pathname?: string;
 }
 
-export default function Navbar({
-  cartItemCount = 0,
-  pathname = "/",
-}: NavbarProps) {
+export default function Navbar({ pathname = "/" }: NavbarProps) {
+  const { totalQuantity, openCart } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const openMenu = useCallback(() => setMenuOpen(true), []);
@@ -286,7 +284,7 @@ export default function Navbar({
 
           {/* Right-side controls: cart + hamburger */}
           <div className="flex items-center gap-1">
-            <CartIcon count={cartItemCount} />
+            <CartIcon count={totalQuantity} onOpen={openCart} />
             <HamburgerButton isOpen={menuOpen} onClick={openMenu} />
           </div>
         </div>

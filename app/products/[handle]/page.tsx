@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { motion } from "framer-motion";
 import type { ShopifyProduct } from "@/types/shopify";
 
 // ─── Handle validation ────────────────────────────────────────────────────────
@@ -328,6 +327,11 @@ export default async function ProductDetailPage({ params }: PageParams) {
                   variantId={firstVariant.id}
                   productTitle={product.title}
                   available={product.availableForSale}
+                  priceInPaise={Math.round(parseFloat(firstVariant.price.amount) * 100)}
+                  currencyCode={firstVariant.price.currencyCode}
+                  imageUrl={product.featuredImage?.url ?? null}
+                  imageAlt={product.featuredImage?.altText ?? null}
+                  handle={product.handle}
                 />
               </div>
             )}
@@ -342,6 +346,11 @@ export default async function ProductDetailPage({ params }: PageParams) {
             variantId={firstVariant.id}
             productTitle={product.title}
             available={product.availableForSale}
+            priceInPaise={Math.round(parseFloat(firstVariant.price.amount) * 100)}
+            currencyCode={firstVariant.price.currencyCode}
+            imageUrl={product.featuredImage?.url ?? null}
+            imageAlt={product.featuredImage?.altText ?? null}
+            handle={product.handle}
           />
         </div>
       )}

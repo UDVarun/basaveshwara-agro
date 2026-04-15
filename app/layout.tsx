@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import { headers } from "next/headers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ClientProviders from "@/components/ClientProviders";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -48,18 +49,25 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Read the current pathname from Next.js request headers for active link highlighting
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "/";
 
   return (
     <html lang="en" className={nunito.variable}>
       <body className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans antialiased">
-        <Navbar pathname={pathname} />
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        {/*
+          ClientProviders wraps the whole tree so:
+          - CartProvider is available to Navbar (cart count) and all product pages
+          - CartDrawer is mounted globally and can read CartContext
+          - Navbar itself is a client component and reads useCart for the live badge
+        */}
+        <ClientProviders>
+          <Navbar pathname={pathname} />
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </ClientProviders>
       </body>
     </html>
   );
