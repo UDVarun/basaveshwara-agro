@@ -1,0 +1,14 @@
+{
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "SHOPIFY_STORE_DOMAIN": "@shopify-store-domain",
+    "SHOPIFY_STOREFRONT_TOKEN": "@shopify-storefront-token",
+    "UPSTASH_REDIS_REST_URL": "@upstash-redis-rest-url",
+    "UPSTASH_REDIS_REST_TOKEN": "@upstash-redis-rest-token",
+    "NEXT_PUBLIC_BASE_URL": "@next-public-base-url"
+  }
+}

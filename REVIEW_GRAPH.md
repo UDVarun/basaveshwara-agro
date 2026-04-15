@@ -124,48 +124,54 @@ Built at commit: 5fe2236d5aa9
 
 ---
 
-## Step 3 — Product Listing Page
+## Step 3-10 — All Steps Completed
 
-_Not started._
+**Date:** 2026-04-15
+
+### Steps Completed
+
+| Step | Branch | Deliverable | Build |
+|---|---|---|---|
+| 3 | step/03-navbar-footer | Mobile Navbar (cart badge, hamburger slide-in) + Footer | ✅ Exit 0 |
+| 4 | step/04-product-listing | ProductCard (anti-gravity), SearchInput (Zod/debounced), /products page | ✅ Exit 0 |
+| 5 | step/05-product-detail | Product detail (generateMetadata, JSON-LD, specs, sticky CTA) | ✅ Exit 0 |
+| 6 | step/06-cart-context | CartContext (useReducer), CartDrawer (slide-in right), ClientProviders | ✅ Exit 0 |
+| 7 | step/07-checkout | CheckoutButton (POST /api/v1/checkout, loading, redirect, 429 handling) | ✅ Exit 0 |
+| 8 | step/08-homepage | Homepage (AgriculturalService JSON-LD, hero, bento 1-2-3 col grid) | ✅ Exit 0 |
+| 9 | step/09-seo-audit | sitemap.ts (dynamic), robots.ts, /about, /contact | ✅ Exit 0 |
+| 10 | step/10-production-readiness | README, vercel.json, SECURITY.md, Pre-launch checklist | ✅ Exit 0 |
+
+### Final Route Map (16 routes)
+
+| Route | Type |
+|---|---|
+| `/` | ƒ Dynamic |
+| `/about` | ƒ Dynamic |
+| `/contact` | ƒ Dynamic |
+| `/products` | ƒ Dynamic |
+| `/products/[handle]` | ƒ Dynamic |
+| `/api/v1/products` | ƒ Dynamic |
+| `/api/v1/products/[handle]` | ƒ Dynamic |
+| `/api/v1/collections` | ƒ Dynamic |
+| `/api/v1/cart` | ƒ Dynamic |
+| `/api/v1/cart/create` | ƒ Dynamic |
+| `/api/v1/cart/add` | ƒ Dynamic |
+| `/api/v1/cart/[cartId]/lines` | ƒ Dynamic |
+| `/api/v1/checkout` | ƒ Dynamic |
+| `/_not-found` | ƒ Dynamic |
+| `/robots.txt` | ○ Static |
+| `/sitemap.xml` | ○ Static |
+
+### Pre-Launch Checklist
+
+- [ ] Replace all `TODO: Replace` placeholders (phone, address, GST, license, Maps link)
+- [ ] Set Shopify store domain + Storefront API token in Vercel env vars
+- [ ] Set Upstash Redis URL + token in Vercel env vars
+- [ ] Enable Shopify Bogus Gateway for staging checkout test
+- [ ] Verify agronomic content in Seasonal Advisory with business owner
+- [ ] Verify trust claim numbers with business owner
+- [ ] Upload `/public/og-image.jpg` (1200x630) for Open Graph
+- [ ] Set real `NEXT_PUBLIC_BASE_URL` to production domain
+- [ ] Run Lighthouse on deployed Vercel URL
 
 ---
-
-## Step 4 — Product Detail Page
-
-_Not started._
-
----
-
-## Step 5 — Cart & Checkout
-
-_Not started._
-
----
-
-## Step 6 — Search
-
-_Not started._
-
----
-
-## Step 7 — Collections / Category Pages
-
-_Not started._
-
----
-
-## Step 8 — Performance & Image Optimization
-
-_Not started._
-
----
-
-## Step 9 — Dynamic Sitemap & SEO Finalization
-
-_Not started._
-
----
-
-## Step 10 — Production Hardening & Deployment
-
-_Not started._
