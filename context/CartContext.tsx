@@ -5,6 +5,7 @@ import {
   useContext,
   useReducer,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 
@@ -137,13 +138,42 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
+const CART_STORAGE_KEY = "agro-cart-v1";
+
+// ─── Persist helpers (SSR-safe) ───────────────────────────────────────────────
+
+function loadCartFromStorage(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed as CartItem[];
+  } catch {
+    return [];
+  }
+}
+
 const initialState: CartState = {
   items: [],
   isOpen: false,
 };
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [state, dispatch] = useReducer(cartReducer, initialState, () => ({
+    ...initialState,
+    items: loadCartFromStorage(),
+  }));
+
+  // Sync cart items to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
+    } catch {
+      // Quota exceeded or private browsing — silently ignore
+    }
+  }, [state.items]);
 
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity"> & { quantity: number }) => {
