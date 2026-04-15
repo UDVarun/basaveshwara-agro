@@ -30,8 +30,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — never commit real secrets
+.env.local
+.env*.local
 .env*
+
+# code-review-graph — local SQLite graph database, never commit
+.code-review-graph/
 
 # vercel
 .vercel
