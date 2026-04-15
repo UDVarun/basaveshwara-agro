@@ -42,6 +42,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.shopify.com",
+        pathname: "/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
