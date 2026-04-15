@@ -52,6 +52,8 @@ export async function shopifyFetch<T>(
     },
     body: JSON.stringify({ query, variables }),
     next: { revalidate: 60 },
+    // Fail fast — abort if Shopify doesn't respond in 5s (e.g. wrong domain)
+    signal: AbortSignal.timeout(5000),
   });
 
   if (!response.ok) {

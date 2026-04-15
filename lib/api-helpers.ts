@@ -23,21 +23,35 @@ export async function checkRateLimit(
   limiter: Ratelimit,
   req: NextRequest
 ): Promise<NextResponse | null> {
-  const ip = getClientIp(req);
-  const { success, reset } = await limiter.limit(ip);
+  // Skip entirely when Upstash credentials are not configured (e.g. local dev)
+  // Prevents ~5s DNS timeout on empty-string Redis URLs.
+  if (!process.env["UPSTASH_REDIS_REST_URL"]) {
+    return null;
+  }
 
-  if (!success) {
-    const retryAfter = Math.ceil((reset - Date.now()) / 1000);
-    return NextResponse.json(
-      { error: CLIENT_ERROR_MESSAGE },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(retryAfter),
-          "X-RateLimit-Reset": String(reset),
-        },
-      }
-    );
+  const ip = getClientIp(req);
+
+  try {
+    const { success, reset } = await limiter.limit(ip);
+
+    if (!success) {
+      const retryAfter = Math.ceil((reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: CLIENT_ERROR_MESSAGE },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(retryAfter),
+            "X-RateLimit-Reset": String(reset),
+          },
+        }
+      );
+    }
+  } catch {
+    // Redis unavailable (DNS failure, wrong credentials, network error).
+    // Log and allow the request through — store availability is preferred
+    // over a complete lockout when the rate limiter is misconfigured.
+    console.error("[checkRateLimit] Rate limiter error — request allowed through");
   }
 
   return null;
