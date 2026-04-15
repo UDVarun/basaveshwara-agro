@@ -6,14 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import CheckoutButton from "@/components/CheckoutButton";
+import { formatPaisePrice } from "@/lib/format";
 
-// ─── Price formatter ──────────────────────────────────────────────────────────
-
-function formatPaise(paise: number, currencyCode = "INR"): string {
-  const amount = paise / 100;
-  if (currencyCode === "INR") return `₹${amount.toLocaleString("en-IN")}`;
-  return `${currencyCode} ${amount.toFixed(2)}`;
-}
+// formatPaisePrice imported from @/lib/format
 
 // ─── Quantity stepper ─────────────────────────────────────────────────────────
 
@@ -211,7 +206,7 @@ export default function CartDrawer() {
                           {item.title}
                         </Link>
                         <p className="text-sm font-bold text-[#166534]">
-                          {formatPaise(item.price * item.quantity, item.currencyCode)}
+                           {formatPaisePrice(item.price * item.quantity, item.currencyCode)}
                         </p>
                       </div>
 
@@ -235,7 +230,7 @@ export default function CartDrawer() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-700">Subtotal</span>
                   <span className="text-base font-bold text-slate-900">
-                    {formatPaise(subtotal, items[0]?.currencyCode ?? "INR")}
+                    {formatPaisePrice(subtotal, items[0]?.currencyCode ?? "INR")}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-700">

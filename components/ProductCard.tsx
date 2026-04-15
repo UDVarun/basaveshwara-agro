@@ -30,10 +30,20 @@ export default function ProductCard({ product }: ProductCardProps) {
   function handleAddToCart() {
     if (!firstVariant || !availableForSale) return;
 
+    // CR: multi-variant products go to PDP where user picks the right variant
+    if (variants.nodes.length > 1) {
+      window.location.href = `/products/${handle}`;
+      return;
+    }
+
+    // CR: guard against malformed price amounts
+    const priceNum = parseFloat(firstVariant.price.amount);
+    if (!isFinite(priceNum)) return;
+
     addItem({
       variantId: firstVariant.id,
       title,
-      price: Math.round(parseFloat(firstVariant.price.amount) * 100), // store in paise
+      price: Math.round(priceNum * 100), // store in paise
       currencyCode: firstVariant.price.currencyCode,
       imageUrl: featuredImage?.url ?? null,
       imageAlt: featuredImage?.altText ?? null,
