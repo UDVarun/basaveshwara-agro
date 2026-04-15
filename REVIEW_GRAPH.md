@@ -38,11 +38,15 @@
 ### Graph Stats
 
 ```
-code-review-graph status output — paste here after running locally:
 $ code-review-graph status
+Nodes: 10
+Edges: 14
+Files: 6
+Languages: tsx, javascript, typescript
+Last updated: 2026-04-15T10:57:22
+Built on branch: step/01-project-setup
+Built at commit: 9eb0b5c27871
 ```
-> Run `pipx install code-review-graph` then `code-review-graph build` in the project root.
-> Paste the `code-review-graph status` output above.
 
 ### Design Law Compliance
 
