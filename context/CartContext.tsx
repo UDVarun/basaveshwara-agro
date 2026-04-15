@@ -5,6 +5,7 @@ import {
   useContext,
   useReducer,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 
@@ -137,13 +138,63 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
+const CART_STORAGE_KEY = "agro-cart-v1";
+
+// ─── Persist helpers (SSR-safe) ───────────────────────────────────────────────
+
+// CR: runtime guard — validates each stored item before hydrating reducer
+// Prevents stale schema / tampered values from corrupting price / quantity math.
+function isValidCartItem(item: unknown): item is CartItem {
+  if (!item || typeof item !== "object") return false;
+  const i = item as Record<string, unknown>;
+  return (
+    typeof i["variantId"] === "string" &&
+    typeof i["title"] === "string" &&
+    typeof i["price"] === "number" &&
+    isFinite(i["price"] as number) &&
+    typeof i["currencyCode"] === "string" &&
+    typeof i["quantity"] === "number" &&
+    Number.isInteger(i["quantity"]) &&
+    (i["quantity"] as number) >= 1 &&
+    (i["quantity"] as number) <= 99 &&
+    typeof i["handle"] === "string" &&
+    (i["imageUrl"] === null || typeof i["imageUrl"] === "string") &&
+    (i["imageAlt"] === null || typeof i["imageAlt"] === "string")
+  );
+}
+
+function loadCartFromStorage(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidCartItem);
+  } catch {
+    return [];
+  }
+}
+
 const initialState: CartState = {
   items: [],
   isOpen: false,
 };
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [state, dispatch] = useReducer(cartReducer, initialState, () => ({
+    ...initialState,
+    items: loadCartFromStorage(),
+  }));
+
+  // Sync cart items to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
+    } catch {
+      // Quota exceeded or private browsing — silently ignore
+    }
+  }, [state.items]);
 
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity"> & { quantity: number }) => {

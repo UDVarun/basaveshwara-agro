@@ -4,16 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { ShopifyProduct } from "@/types/shopify";
-
-// ─── Price formatter ──────────────────────────────────────────────────────────
-
-function formatPrice(amount: string, currencyCode: string): string {
-  const num = parseFloat(amount);
-  if (currencyCode === "INR") {
-    return `₹${num.toLocaleString("en-IN")}`;
-  }
-  return `${currencyCode} ${num.toFixed(2)}`;
-}
+import { formatPrice } from "@/lib/format";
+import { useCart } from "@/context/CartContext";
 
 // ─── ProductCard ──────────────────────────────────────────────────────────────
 
@@ -25,6 +17,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { handle, title, featuredImage, priceRange, variants, availableForSale } =
     product;
 
+  const { addItem, openCart } = useCart();
+
   const minPrice = priceRange.minVariantPrice;
   const firstVariant = variants.nodes[0];
 
@@ -32,6 +26,33 @@ export default function ProductCard({ product }: ProductCardProps) {
   const subtitle =
     [product.vendor, product.productType].filter(Boolean).join(" · ") ||
     "Agricultural input";
+
+  function handleAddToCart() {
+    if (!firstVariant || !availableForSale) return;
+
+    // CR: multi-variant products go to PDP where user picks the right variant
+    if (variants.nodes.length > 1) {
+      window.location.href = `/products/${handle}`;
+      return;
+    }
+
+    // CR: guard against malformed price amounts
+    const priceNum = parseFloat(firstVariant.price.amount);
+    if (!isFinite(priceNum)) return;
+
+    addItem({
+      variantId: firstVariant.id,
+      title,
+      price: Math.round(priceNum * 100), // store in paise
+      currencyCode: firstVariant.price.currencyCode,
+      imageUrl: featuredImage?.url ?? null,
+      imageAlt: featuredImage?.altText ?? null,
+      handle,
+      quantity: 1,
+    });
+
+    openCart();
+  }
 
   return (
     <motion.article
@@ -115,6 +136,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <motion.button
           whileTap={{ scale: 0.97 }}
           disabled={!availableForSale}
+          onClick={handleAddToCart}
           aria-label={
             availableForSale
               ? `Add ${title} to cart`

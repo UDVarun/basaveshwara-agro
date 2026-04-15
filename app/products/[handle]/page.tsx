@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import type { ShopifyProduct } from "@/types/shopify";
+import { formatPrice } from "@/lib/format";
 
 // ─── Handle validation ────────────────────────────────────────────────────────
 // Shopify handles: lowercase letters, digits, hyphens only, max 100 chars
@@ -77,13 +78,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Price formatter ──────────────────────────────────────────────────────────
-
-function formatPrice(amount: string, currencyCode: string): string {
-  const num = parseFloat(amount);
-  if (currencyCode === "INR") return `₹${num.toLocaleString("en-IN")}`;
-  return `${currencyCode} ${num.toFixed(2)}`;
-}
+// formatPrice imported from @/lib/format
 
 // ─── JSON-LD Product schema ───────────────────────────────────────────────────
 
