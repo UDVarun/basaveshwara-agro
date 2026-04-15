@@ -6,8 +6,21 @@ import type {
   ShopifyCart,
   ShopifyUserError,
 } from "@/types/shopify";
+import {
+  PRODUCTS_QUERY,
+  PRODUCT_BY_HANDLE_QUERY,
+  ALL_PRODUCT_HANDLES_QUERY,
+} from "@/lib/queries/products";
+import { COLLECTIONS_QUERY } from "@/lib/queries/collections";
+import {
+  CART_CREATE_MUTATION,
+  CART_QUERY,
+  CART_LINES_ADD_MUTATION,
+  CART_LINES_UPDATE_MUTATION,
+  CART_LINES_REMOVE_MUTATION,
+} from "@/lib/queries/cart";
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 function getShopifyConfig() {
   const domain = process.env["SHOPIFY_STORE_DOMAIN"];
@@ -38,7 +51,6 @@ export async function shopifyFetch<T>(
       "X-Shopify-Storefront-Access-Token": token,
     },
     body: JSON.stringify({ query, variables }),
-    // Next.js cache: revalidate every 60 seconds
     next: { revalidate: 60 },
   });
 
@@ -61,106 +73,7 @@ export async function shopifyFetch<T>(
   return json.data;
 }
 
-// ─── GraphQL fragments ────────────────────────────────────────────────────────
-
-const PRODUCT_FRAGMENT = `
-  fragment ProductFields on Product {
-    id
-    handle
-    title
-    description
-    descriptionHtml
-    availableForSale
-    tags
-    vendor
-    productType
-    featuredImage {
-      url
-      altText
-      width
-      height
-    }
-    images(first: 10) {
-      nodes {
-        url
-        altText
-        width
-        height
-      }
-    }
-    variants(first: 10) {
-      nodes {
-        id
-        title
-        availableForSale
-        quantityAvailable
-        selectedOptions { name value }
-        price { amount currencyCode }
-        compareAtPrice { amount currencyCode }
-      }
-    }
-    priceRange {
-      minVariantPrice { amount currencyCode }
-      maxVariantPrice { amount currencyCode }
-    }
-    seo { title description }
-  }
-`;
-
-const CART_FRAGMENT = `
-  fragment CartFields on Cart {
-    id
-    checkoutUrl
-    totalQuantity
-    cost {
-      totalAmount { amount currencyCode }
-      subtotalAmount { amount currencyCode }
-      totalTaxAmount { amount currencyCode }
-    }
-    lines(first: 100) {
-      nodes {
-        id
-        quantity
-        merchandise {
-          ... on ProductVariant {
-            id
-            title
-            price { amount currencyCode }
-            product {
-              id
-              handle
-              title
-              featuredImage { url altText width height }
-            }
-          }
-        }
-        cost {
-          totalAmount { amount currencyCode }
-        }
-      }
-    }
-  }
-`;
-
-// ─── Query: product list ──────────────────────────────────────────────────────
-
-const PRODUCTS_QUERY = `
-  ${PRODUCT_FRAGMENT}
-  query Products($first: Int!, $after: String, $query: String) {
-    products(first: $first, after: $after, query: $query) {
-      edges {
-        cursor
-        node { ...ProductFields }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-    }
-  }
-`;
+// ─── Products ─────────────────────────────────────────────────────────────────
 
 export async function getProducts(params: {
   first?: number;
@@ -172,22 +85,11 @@ export async function getProducts(params: {
     {
       first: params.first ?? 20,
       after: params.after ?? null,
-      query: params.query ?? null,
+      ...(params.query !== undefined && { query: params.query }),
     }
   );
   return data.products;
 }
-
-// ─── Query: single product by handle ─────────────────────────────────────────
-
-const PRODUCT_BY_HANDLE_QUERY = `
-  ${PRODUCT_FRAGMENT}
-  query ProductByHandle($handle: String!) {
-    product(handle: $handle) {
-      ...ProductFields
-    }
-  }
-`;
 
 export async function getProductByHandle(
   handle: string
@@ -199,21 +101,7 @@ export async function getProductByHandle(
   return data.product;
 }
 
-// ─── Query: all product handles (for sitemap) ─────────────────────────────────
-
-const ALL_PRODUCT_HANDLES_QUERY = `
-  query AllProductHandles($first: Int!, $after: String) {
-    products(first: $first, after: $after) {
-      edges {
-        node { handle }
-        cursor
-      }
-      pageInfo { hasNextPage endCursor }
-    }
-  }
-`;
-
-// Named alias avoids TS7022 circular inference when inline generic is complex
+// Named alias avoids TS7022 circular inference
 type AllHandlesResponse = {
   products: {
     edges: Array<{ node: { handle: string }; cursor: string }>;
@@ -243,39 +131,7 @@ export async function getAllProductHandles(): Promise<string[]> {
   return handles;
 }
 
-// ─── Query: collections ───────────────────────────────────────────────────────
-
-const COLLECTIONS_QUERY = `
-  query Collections($first: Int!) {
-    collections(first: $first) {
-      edges {
-        cursor
-        node {
-          id
-          handle
-          title
-          description
-          image { url altText width height }
-          products(first: 6) {
-            edges {
-              cursor
-              node {
-                id handle title availableForSale
-                featuredImage { url altText width height }
-                priceRange {
-                  minVariantPrice { amount currencyCode }
-                  maxVariantPrice { amount currencyCode }
-                }
-              }
-            }
-            pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
-          }
-        }
-      }
-      pageInfo { hasNextPage endCursor }
-    }
-  }
-`;
+// ─── Collections ──────────────────────────────────────────────────────────────
 
 export async function getCollections(first = 20): Promise<ShopifyCollection[]> {
   const data = await shopifyFetch<{
@@ -287,17 +143,7 @@ export async function getCollections(first = 20): Promise<ShopifyCollection[]> {
   return data.collections.edges.map((e) => e.node);
 }
 
-// ─── Mutation: create cart ────────────────────────────────────────────────────
-
-const CART_CREATE_MUTATION = `
-  ${CART_FRAGMENT}
-  mutation CartCreate($lines: [CartLineInput!]) {
-    cartCreate(input: { lines: $lines }) {
-      cart { ...CartFields }
-      userErrors { field message }
-    }
-  }
-`;
+// ─── Cart ─────────────────────────────────────────────────────────────────────
 
 export async function createCart(
   lines: Array<{ merchandiseId: string; quantity: number }>
@@ -308,33 +154,12 @@ export async function createCart(
   return data.cartCreate;
 }
 
-// ─── Query: get cart ──────────────────────────────────────────────────────────
-
-const CART_QUERY = `
-  ${CART_FRAGMENT}
-  query Cart($cartId: ID!) {
-    cart(id: $cartId) { ...CartFields }
-  }
-`;
-
 export async function getCart(cartId: string): Promise<ShopifyCart | null> {
   const data = await shopifyFetch<{ cart: ShopifyCart | null }>(CART_QUERY, {
     cartId,
   });
   return data.cart;
 }
-
-// ─── Mutation: add lines to cart ─────────────────────────────────────────────
-
-const CART_LINES_ADD_MUTATION = `
-  ${CART_FRAGMENT}
-  mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-    cartLinesAdd(cartId: $cartId, lines: $lines) {
-      cart { ...CartFields }
-      userErrors { field message }
-    }
-  }
-`;
 
 export async function addCartLines(
   cartId: string,
@@ -346,18 +171,6 @@ export async function addCartLines(
   return data.cartLinesAdd;
 }
 
-// ─── Mutation: update cart lines ──────────────────────────────────────────────
-
-const CART_LINES_UPDATE_MUTATION = `
-  ${CART_FRAGMENT}
-  mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
-    cartLinesUpdate(cartId: $cartId, lines: $lines) {
-      cart { ...CartFields }
-      userErrors { field message }
-    }
-  }
-`;
-
 export async function updateCartLines(
   cartId: string,
   lines: Array<{ id: string; quantity: number }>
@@ -367,18 +180,6 @@ export async function updateCartLines(
   }>(CART_LINES_UPDATE_MUTATION, { cartId, lines });
   return data.cartLinesUpdate;
 }
-
-// ─── Mutation: remove cart lines ──────────────────────────────────────────────
-
-const CART_LINES_REMOVE_MUTATION = `
-  ${CART_FRAGMENT}
-  mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
-    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-      cart { ...CartFields }
-      userErrors { field message }
-    }
-  }
-`;
 
 export async function removeCartLines(
   cartId: string,
