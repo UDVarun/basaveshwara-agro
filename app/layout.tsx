@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
+import { headers } from "next/headers";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -40,14 +43,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the current pathname from Next.js request headers for active link highlighting
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "/";
+
   return (
     <html lang="en" className={nunito.variable}>
-      <body className="bg-[#F8FAFC] font-sans antialiased">{children}</body>
+      <body className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans antialiased">
+        <Navbar pathname={pathname} />
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   );
 }
