@@ -54,7 +54,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={nunito.variable}>
-      <body className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans antialiased">
+      <body
+        className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans antialiased"
+        suppressHydrationWarning
+      >
         {/*
           ClientProviders wraps the whole tree so:
           - CartProvider is available to Navbar (cart count) and all product pages
