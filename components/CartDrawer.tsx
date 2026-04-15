@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import CheckoutButton from "@/components/CheckoutButton";
 
 // ─── Price formatter ──────────────────────────────────────────────────────────
 
@@ -241,15 +242,7 @@ export default function CartDrawer() {
                   Taxes and delivery calculated at checkout.
                 </p>
 
-                {/* Checkout button — wired in Step 7 */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  id="cart-checkout-button"
-                  className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-md bg-[#166534] text-sm font-semibold text-white hover:bg-[#14532d]"
-                  aria-label="Proceed to checkout"
-                >
-                  Proceed to Checkout
-                </motion.button>
+                <CheckoutButton />
               </div>
             )}
           </motion.aside>
