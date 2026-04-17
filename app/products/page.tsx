@@ -10,41 +10,6 @@ export const metadata: Metadata = {
   description: "Browse fertilizers, pesticides, micronutrient blends, and organic compost available at Sri Basaveshwara Agro Kendra, Chikkamagaluru.",
 };
 
-interface ProductsData {
-  edges: Array<{
-    node: ShopifyProduct;
-  }>;
-}
-
-// Removal of fetchProducts as we now use direct library calls
-
-async function ProductsGrid({ query }: { query?: string }) {
-  let data: ShopifyProductConnection;
-  try {
-    data = await getProducts({
-      first: 12,
-      query: query,
-    });
-  } catch (error) {
-    console.error("[ProductsGrid] Error fetching:", error);
-    return <div className="p-12 text-center text-outline">Inventory sync in progress...</div>;
-  }
-
-  const products = data.edges.map((edge) => edge.node);
-
-  if (products.length === 0) {
-    return <div className="p-12 text-center text-outline text-lg">No products found in this category.</div>;
-  }
-
-  return (
-    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
-    </div>
-  );
-}
-
 import ProductFilters from "@/components/ProductFilters";
 
 interface ProductsPageProps {
