@@ -1,354 +1,278 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import type { ShopifyProduct } from "@/types/shopify";
+import { getProductByHandle, getProducts } from "@/lib/shopify";
 import { formatPrice } from "@/lib/format";
+import ProductGallery from "@/components/ProductGallery";
+import ProductActions from "@/components/ProductActions";
+import ProductCard from "@/components/ProductCard";
 
-// ─── Handle validation ────────────────────────────────────────────────────────
-// Shopify handles: lowercase letters, digits, hyphens only, max 100 chars
+const HandleSchema = z.string().min(1).max(100);
 
-const HandleSchema = z
-  .string()
-  .min(1)
-  .max(100)
-  .regex(/^[a-z0-9-]+$/, "Invalid handle");
-
-// ─── Data fetching ────────────────────────────────────────────────────────────
-
-async function fetchProduct(handle: string): Promise<ShopifyProduct | null> {
-  const baseUrl =
-    process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
-
-  const res = await fetch(`${baseUrl}/api/v1/products/${handle}`, {
-    next: { revalidate: 60 },
-  });
-
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Failed to load product");
-
-  return res.json() as Promise<ShopifyProduct>;
-}
-
-// ─── generateMetadata (SEO Law 2) ────────────────────────────────────────────
+// Removal of fetch helpers — using direct Shopify library calls
 
 interface PageParams {
   params: Promise<{ handle: string }>;
 }
 
-export async function generateMetadata({
-  params,
-}: PageParams): Promise<Metadata> {
+export const revalidate = 3600; // Revalidate every hour
+
+export async function generateStaticParams() {
+  try {
+    const handles = await getAllProductHandles();
+    // Pre-render the first 50 products for near-instant transitions
+    return handles.slice(0, 50).map((handle) => ({
+      handle: handle,
+    }));
+  } catch (error) {
+    console.error("[generateStaticParams] Error:", error);
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const { handle } = await params;
-
-  const parsed = HandleSchema.safeParse(handle);
-  if (!parsed.success) {
-    return { title: "Product Not Found" };
-  }
-
-  const product = await fetchProduct(parsed.data);
-  if (!product) {
-    return { title: "Product Not Found" };
-  }
-
-  const title = product.seo.title ?? product.title;
-  const description =
-    product.seo.description ??
-    product.description.slice(0, 160) ??
-    `Buy ${product.title} from Sri Basaveshwara Agro Kendra, Chikmagalur`;
-
+  const product = await getProductByHandle(handle);
+  if (!product) return { title: "Product Not Found" };
   return {
-    title,
-    description,
+    title: `${product.title} | Sri Basaveshwara Agro Kendra`,
+    description: product.description.slice(0, 160),
     openGraph: {
-      title,
-      description,
-      images: product.featuredImage
-        ? [
-            {
-              url: product.featuredImage.url,
-              width: product.featuredImage.width,
-              height: product.featuredImage.height,
-              alt: product.featuredImage.altText ?? title,
-            },
-          ]
-        : [],
-    },
-  };
-}
-
-// formatPrice imported from @/lib/format
-
-// ─── JSON-LD Product schema ───────────────────────────────────────────────────
-
-function ProductJsonLd({ product }: { product: ShopifyProduct }) {
-  const firstVariant = product.variants.nodes[0];
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.title,
-    description: product.description,
-    image: product.featuredImage?.url,
-    brand: {
-      "@type": "Brand",
-      name: product.vendor || "Sri Basaveshwara Agro Kendra",
-    },
-    offers: {
-      "@type": "Offer",
-      priceCurrency: firstVariant?.price.currencyCode ?? "INR",
-      price: firstVariant?.price.amount ?? "0",
-      availability: product.availableForSale
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-      seller: {
-        "@type": "Organization",
-        name: "Sri Basaveshwara Agro Kendra",
-      },
-    },
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  );
-}
-
-// ─── Product specs table ──────────────────────────────────────────────────────
-// Reads from product tags in format "spec:value" e.g. "active-ingredient:Chlorpyrifos"
-
-function SpecsTable({ product }: { product: ShopifyProduct }) {
-  // Parse structured tags: "registration:KA-CHK-001", "dosage:2ml per litre" etc.
-  const specTags = product.tags
-    .filter((t) => t.includes(":"))
-    .map((t) => {
-      const colonIdx = t.indexOf(":");
-      return {
-        key: t.slice(0, colonIdx).replace(/-/g, " "),
-        value: t.slice(colonIdx + 1),
-      };
-    });
-
-  // Build specs from product fields + parsed tags
-  const specs: Array<{ label: string; value: string }> = [];
-
-  if (product.vendor) specs.push({ label: "Manufacturer", value: product.vendor });
-  if (product.productType) specs.push({ label: "Product Type", value: product.productType });
-
-  // Pack sizes from variant titles
-  const packSizes = product.variants.nodes
-    .map((v) => v.title)
-    .filter((t) => t !== "Default Title")
-    .join(", ");
-  if (packSizes) specs.push({ label: "Pack Sizes", value: packSizes });
-
-  // Additional specs from tags
-  const specKeyLabels: Record<string, string> = {
-    "active ingredient": "Active Ingredient",
-    "concentration": "Concentration / NPK",
-    "npk": "NPK Ratio",
-    "crop suitability": "Crop Suitability",
-    "dosage": "Dosage / Application Rate",
-    "registration": "Registration Number",
-    "application": "Application Method",
-    "shelf life": "Shelf Life",
-  };
-
-  for (const { key, value } of specTags) {
-    const label = specKeyLabels[key.toLowerCase()] ?? key;
-    if (!specs.find((s) => s.label === label)) {
-      specs.push({ label, value });
+      title: product.title,
+      description: product.description.slice(0, 160),
+      images: product.featuredImage ? [{ url: product.featuredImage.url }] : [],
     }
-  }
-
-  if (specs.length === 0) return null;
-
-  return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-      <table className="w-full text-sm">
-        <caption className="sr-only">Product specifications for {product.title}</caption>
-        <tbody>
-          {specs.map(({ label, value }, i) => (
-            <tr
-              key={label}
-              className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}
-            >
-              <th
-                scope="row"
-                className="w-2/5 px-4 py-3 text-left text-xs font-semibold text-slate-700"
-              >
-                {label}
-              </th>
-              <td className="px-4 py-3 text-left text-slate-900">{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  };
 }
-
-// ─── Add to Cart button (client island) ─────────────────────────────────────
-// Imported below as a client component
-
-import AddToCartButton from "./AddToCartButton";
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function ProductDetailPage({ params }: PageParams) {
   const { handle } = await params;
-
-  // Validate handle before any fetch
   const parsed = HandleSchema.safeParse(handle);
   if (!parsed.success) notFound();
 
-  const product = await fetchProduct(parsed.data);
+  // Parallelize the primary fetch and related products discovery
+  const [product, relatedData] = await Promise.all([
+    getProductByHandle(parsed.data),
+    getProducts({ first: 8 }) // Fetch more to filter current product effectively
+  ]);
+
   if (!product) notFound();
 
+  const relatedProducts = relatedData.edges
+    .map(e => e.node)
+    .filter(p => p.handle !== product.handle)
+    .slice(0, 4);
+
   const firstVariant = product.variants.nodes[0];
-  const price = firstVariant
-    ? formatPrice(firstVariant.price.amount, firstVariant.price.currencyCode)
-    : null;
+  
+  // Calculate discount if applicable
+  const hasDiscount = firstVariant?.compareAtPrice && 
+                      parseFloat(firstVariant.compareAtPrice.amount) > parseFloat(firstVariant.price.amount);
+  const discountPercent = hasDiscount 
+    ? Math.round(((parseFloat(firstVariant!.compareAtPrice!.amount) - parseFloat(firstVariant!.price.amount)) / parseFloat(firstVariant!.compareAtPrice!.amount)) * 100)
+    : 0;
 
   return (
-    <>
-      <ProductJsonLd product={product} />
-
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        {/* Breadcrumb — each link min-h-[48px] */}
-        <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-700">
-            <li>
-              <Link
-                href="/"
-                className="flex min-h-[48px] items-center hover:text-[#166534]"
-              >
-                Home
-              </Link>
-            </li>
-            <li aria-hidden="true" className="text-slate-400">/</li>
-            <li>
-              <Link
-                href="/products"
-                className="flex min-h-[48px] items-center hover:text-[#166534]"
-              >
-                Products
-              </Link>
-            </li>
-            <li aria-hidden="true" className="text-slate-400">/</li>
-            <li
-              aria-current="page"
-              className="flex min-h-[48px] items-center font-semibold text-slate-900"
-            >
-              {product.title}
-            </li>
+    <main className="bg-surface pb-24 font-body text-on-surface antialiased pt-24">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        {/* Breadcrumbs */}
+        <nav aria-label="Breadcrumb" className="flex text-[11px] text-on-surface-variant font-label mb-8 overflow-x-auto no-scrollbar whitespace-nowrap">
+          <ol className="flex items-center space-x-2">
+            <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
+            <li><span className="material-symbols-outlined text-xs">chevron_right</span></li>
+            <li><Link href="/products" className="hover:text-primary transition-colors">Inventory</Link></li>
+            <li><span className="material-symbols-outlined text-xs">chevron_right</span></li>
+            <li className="text-on-surface-variant/60">{product.productType || "Resources"}</li>
+            <li><span className="material-symbols-outlined text-xs">chevron_right</span></li>
+            <li aria-current="page" className="text-primary font-bold">{product.title}</li>
           </ol>
         </nav>
 
-        {/* Product layout: stacked mobile, side-by-side desktop */}
-        <div className="flex flex-col gap-8 md:flex-row md:gap-12">
-          {/* Product image */}
-          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100 md:w-1/2 md:flex-none">
-            {product.featuredImage ? (
-              <Image
-                src={product.featuredImage.url}
-                alt={
-                  product.featuredImage.altText ??
-                  `${product.title} — product image`
-                }
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-contain p-6"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
-                No image available
-              </div>
-            )}
+        {/* Product Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
+          {/* Left: Gallery */}
+          <div className="lg:col-span-7">
+            <ProductGallery 
+              images={product.images.nodes} 
+              title={product.title} 
+            />
           </div>
 
-          {/* Product info */}
-          <div className="flex flex-1 flex-col">
-            {/* Vendor / type */}
-            {(product.vendor || product.productType) && (
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#166534]">
-                {[product.vendor, product.productType].filter(Boolean).join(" · ")}
-              </p>
-            )}
-
-            {/* Product name — h1 */}
-            <h1 className="mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+          {/* Right: Details */}
+          <div className="lg:col-span-5 flex flex-col h-full">
+            <div className="mb-2">
+              <span className="text-secondary font-bold font-label text-[10px] uppercase tracking-[0.3em]">{product.vendor}</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tighter text-on-surface mb-4 leading-tight">
               {product.title}
             </h1>
+            
+            <div className="flex items-center space-x-4 mb-8">
+              <div className="flex items-center text-secondary">
+                {[1, 2, 3, 4].map(i => (
+                  <span key={i} className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                ))}
+                <span className="material-symbols-outlined text-lg">star_half</span>
+              </div>
+              <span className="text-on-surface-variant text-xs font-bold font-label opacity-60 uppercase tracking-widest">(128 Farmer Reviews)</span>
+            </div>
 
-            {/* Price */}
-            {price && (
-              <p className="mt-3 text-2xl font-bold text-[#166534]">
-                {price}
-                {product.variants.nodes.length > 1 && (
-                  <span className="ml-1 text-sm font-normal text-slate-700">
-                    onwards
+            <div className="flex items-end space-x-4 mb-8">
+              <span className="text-4xl font-headline font-bold text-primary tracking-tighter">
+                {firstVariant ? formatPrice(firstVariant.price.amount, firstVariant.price.currencyCode) : "Price on request"}
+              </span>
+              {hasDiscount && (
+                <>
+                  <span className="text-xl text-on-surface-variant/40 line-through font-medium mb-1">
+                    {formatPrice(firstVariant.compareAtPrice!.amount, firstVariant.compareAtPrice!.currencyCode)}
                   </span>
-                )}
-              </p>
-            )}
-
-            {/* Availability */}
-            <p className="mt-2 text-sm font-semibold">
-              {product.availableForSale ? (
-                <span className="text-[#166534]">In Stock</span>
-              ) : (
-                <span className="text-slate-500">Out of Stock</span>
+                  <span className="text-sm text-secondary font-bold mb-2 bg-secondary/10 px-2 py-0.5 rounded-full">-{discountPercent}%</span>
+                </>
               )}
+            </div>
+
+            <p className="text-on-surface-variant/80 font-medium leading-relaxed text-lg mb-10">
+              {product.description}
             </p>
 
-            {/* Description */}
-            {product.description && (
-              <div className="mt-4 text-sm leading-relaxed text-slate-700">
-                <p>{product.description}</p>
+            {/* Trust Badges */}
+            <div className="grid grid-cols-3 gap-4 mb-10 py-8 border-y border-outline-variant/20">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant/10 shadow-sm">
+                  <span className="material-symbols-outlined text-2xl">verified</span>
+                </div>
+                <span className="text-[10px] font-bold text-on-surface font-label uppercase tracking-widest">Genuine Product</span>
               </div>
-            )}
-
-            {/* Specs table */}
-            <SpecsTable product={product} />
-
-            {/* Desktop Add to Cart — static, inline with product form */}
-            {firstVariant && (
-              <div className="mt-6 hidden md:block">
-                <AddToCartButton
-                  variantId={firstVariant.id}
-                  productTitle={product.title}
-                  available={product.availableForSale}
-                  priceInPaise={Math.round(parseFloat(firstVariant.price.amount) * 100)}
-                  currencyCode={firstVariant.price.currencyCode}
-                  imageUrl={product.featuredImage?.url ?? null}
-                  imageAlt={product.featuredImage?.altText ?? null}
-                  handle={product.handle}
-                />
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant/10 shadow-sm">
+                  <span className="material-symbols-outlined text-2xl">receipt_long</span>
+                </div>
+                <span className="text-[10px] font-bold text-on-surface font-label uppercase tracking-widest">GST Invoice</span>
               </div>
-            )}
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant/10 shadow-sm">
+                  <span className="material-symbols-outlined text-2xl">storefront</span>
+                </div>
+                <span className="text-[10px] font-bold text-on-surface font-label uppercase tracking-widest">Authorized</span>
+              </div>
+            </div>
+
+            {/* Client Actions Component */}
+            <ProductActions 
+              variants={product.variants.nodes}
+              productTitle={product.title}
+              handle={product.handle}
+              featuredImage={product.featuredImage}
+            />
+
+            <div className="mt-auto">
+              <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10 flex items-start space-x-3">
+                <span className="material-symbols-outlined text-primary text-xl">info</span>
+                <p className="text-xs text-on-surface-variant font-medium leading-relaxed">
+                  For bulk biological orders or wholesale inquiries, please 
+                  <Link href="/contact" className="text-primary font-bold hover:underline ml-1">contact dealer support</Link>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Details Bento Section */}
+        <div className="mt-32 pt-16 border-t border-outline-variant/20">
+          <div className="flex flex-col lg:flex-row gap-12">
+            <div className="lg:w-2/3">
+              <h3 className="text-3xl font-headline font-bold text-primary mb-8 tracking-tighter">Agronomic Assessment</h3>
+              <div className="bg-surface-container-low p-10 rounded-[2.5rem] shadow-editorial border border-outline-variant/5">
+                <div className="prose prose-stone prose-lg font-body leading-relaxed text-on-surface-variant max-w-none">
+                  {product.descriptionHtml ? (
+                    <div dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
+                  ) : (
+                    <p>{product.description}</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Dynamic Guidelines Grid (Visible for Seeds/Fertilizers) */}
+              {["Seed", "Fertilizer"].includes(product.productType) && (
+                <div className="mt-8 bg-primary text-white p-10 rounded-[2.5rem] shadow-editorial">
+                  <h4 className="text-xl font-headline font-bold mb-10 flex items-center gap-3">
+                    <span className="material-symbols-outlined">analytics</span>
+                    Cultivation Protocol
+                  </h4>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    {[
+                      { label: "Stability", icon: "landscape", value: "High Loam Precision" },
+                      { label: "Interval", icon: "calendar_today", value: "90-110 Days" },
+                      { label: "Optimal Rate", icon: "scale", value: "100g / Acre" },
+                      { label: "Geometry", icon: "straighten", value: "90cm x 60cm" }
+                    ].map((item, idx) => (
+                      <div key={idx}>
+                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-2">{item.label}</div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <span className="material-symbols-outlined text-secondary opacity-80">{item.icon}</span>
+                          <span>{item.value}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="lg:w-1/3">
+              <div className="bg-white p-10 rounded-[2.5rem] shadow-editorial border border-outline-variant/10 h-full flex flex-col">
+                <h3 className="text-xl font-headline font-bold text-primary mb-8 flex items-center gap-2 tracking-tighter">
+                  <span className="material-symbols-outlined text-secondary">workspace_premium</span>
+                  Resource Certification
+                </h3>
+                <ul className="space-y-6 flex-grow">
+                  {[
+                    "Verified Biological Purity",
+                    "Climate-Resistant Optimization",
+                    "High Logistics Stability",
+                    "Certified Manufacturer Warranty"
+                  ].map((benefit, i) => (
+                    <li key={i} className="flex items-start gap-4">
+                      <div className="w-6 h-6 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="material-symbols-outlined text-secondary text-sm">check</span>
+                      </div>
+                      <span className="text-on-surface-variant font-medium leading-snug">{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-12 pt-8 border-t border-outline-variant/20">
+                  <div className="flex items-center gap-3 text-secondary font-bold text-xs uppercase tracking-widest">
+                    <span className="material-symbols-outlined">verified</span>
+                    Stewardship Record 100%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Related Products */}
+        <div className="mt-32">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <h2 className="text-4xl font-headline font-bold text-primary tracking-tighter">Strategic Provisions</h2>
+              <p className="text-on-surface-variant font-medium mt-2">Compatible resources for your current selection.</p>
+            </div>
+            <Link href="/products" className="text-primary font-bold hover:underline flex items-center group font-label text-sm uppercase tracking-widest">
+              View Inventory
+              <span className="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {relatedProducts?.filter(p => p.handle !== product.handle).slice(0, 4).map((rp) => (
+              <ProductCard key={rp.id} product={rp} />
+            ))}
           </div>
         </div>
       </div>
-
-      {/* Mobile sticky Add to Cart — bottom of viewport */}
-      {firstVariant && (
-        <div className="sticky bottom-0 left-0 right-0 border-t border-slate-200 bg-[#F8FAFC] p-4 md:hidden">
-          <AddToCartButton
-            variantId={firstVariant.id}
-            productTitle={product.title}
-            available={product.availableForSale}
-            priceInPaise={Math.round(parseFloat(firstVariant.price.amount) * 100)}
-            currencyCode={firstVariant.price.currencyCode}
-            imageUrl={product.featuredImage?.url ?? null}
-            imageAlt={product.featuredImage?.altText ?? null}
-            handle={product.handle}
-          />
-        </div>
-      )}
-    </>
+    </main>
   );
 }

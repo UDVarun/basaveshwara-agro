@@ -2,48 +2,31 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import type { ShopifyProduct } from "@/types/shopify";
-import { formatPrice } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
-
-// ─── ProductCard ──────────────────────────────────────────────────────────────
+import { formatPrice } from "@/lib/format";
+import type { ShopifyProduct } from "@/types/shopify";
 
 interface ProductCardProps {
   product: ShopifyProduct;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { handle, title, featuredImage, priceRange, variants, availableForSale } =
-    product;
-
+  const { handle, title, featuredImage, priceRange, variants, availableForSale, vendor, description } = product;
   const { addItem, openCart } = useCart();
-
+  
   const minPrice = priceRange.minVariantPrice;
   const firstVariant = variants.nodes[0];
 
-  // Build a short, honest description from the product vendor + type
-  const subtitle =
-    [product.vendor, product.productType].filter(Boolean).join(" · ") ||
-    "Agricultural input";
-
-  function handleAddToCart() {
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!firstVariant || !availableForSale) return;
-
-    // CR: multi-variant products go to PDP where user picks the right variant
-    if (variants.nodes.length > 1) {
-      window.location.href = `/products/${handle}`;
-      return;
-    }
-
-    // CR: guard against malformed price amounts
-    const priceNum = parseFloat(firstVariant.price.amount);
-    if (!isFinite(priceNum)) return;
 
     addItem({
       variantId: firstVariant.id,
       title,
-      price: Math.round(priceNum * 100), // store in paise
+      price: Math.round(Number.parseFloat(firstVariant.price.amount) * 100),
       currencyCode: firstVariant.price.currencyCode,
       imageUrl: featuredImage?.url ?? null,
       imageAlt: featuredImage?.altText ?? null,
@@ -55,104 +38,60 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <motion.article
-      // Anti-gravity hover: y: -8 on hover, scale feedback on tap — BOTH required (mobile + desktop)
-      whileHover={{ y: -8 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", damping: 20, stiffness: 100 }}
-      className="group relative flex flex-col overflow-hidden rounded-2xl bg-white"
-      // Shadow grows on hover via CSS class — no gradient shadow
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-    >
-      {/* Hover shadow via pseudo — handled with group-hover in globals */}
-      <Link
-        href={`/products/${handle}`}
-        id={`product-card-${handle}`}
-        aria-label={`View ${title}`}
-        className="flex flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2"
-      >
-        {/* Product image */}
-        <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-          {featuredImage ? (
-            <Image
-              src={featuredImage.url}
-              alt={featuredImage.altText ?? `${title} product image`}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-            />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center text-sm text-slate-500"
-              aria-hidden="true"
-            >
-              No image
-            </div>
-          )}
+    <div className="group bg-surface-container-lowest overflow-hidden hover:scale-[1.01] transition-all duration-500 relative shadow-none hover:shadow-[0_12px_30px_-10px_rgba(31,27,23,0.07)] flex flex-col h-full border border-outline-variant/10 rounded-lg">
+      {/* Clickable Overlay Link */}
+      <Link 
+        href={`/products/${handle}`} 
+        className="absolute inset-0 z-0" 
+        aria-label={`View details for ${title}`}
+      />
 
-          {/* Out-of-stock badge */}
-          {!availableForSale && (
-            <span className="absolute left-3 top-3 rounded-md bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
-              Out of Stock
-            </span>
-          )}
-        </div>
+      {/* Image Container - Even smaller h-42 for ultra-sleek look */}
+      <div className="h-42 bg-surface-container-low relative overflow-hidden rounded-t-lg pointer-events-none">
+        {featuredImage ? (
+          <Image 
+            src={featuredImage.url}
+            alt={featuredImage.altText ?? title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="w-full h-full object-cover mix-blend-multiply opacity-85 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-outline/30 uppercase text-[8px] font-bold tracking-widest bg-surface-container-high">
+            Draft Vis
+          </div>
+        )}
+      </div>
 
-        {/* Card content */}
-        <div className="flex flex-1 flex-col p-4">
-          {/* Product name */}
-          <h2 className="text-sm font-bold leading-snug text-slate-900 sm:text-base">
+      {/* Content Area - 16px padding */}
+      <div className="p-4 flex-1 flex flex-col justify-between bg-surface-container-lowest relative z-10 pointer-events-none">
+        <div className="mb-3">
+          <p className="text-[9px] font-bold text-outline tracking-wider uppercase mb-1 font-body opacity-70">
+            {vendor}
+          </p>
+          <h3 className="font-headline text-base font-semibold text-on-surface mb-1 leading-tight group-hover:text-primary transition-colors">
             {title}
-          </h2>
-
-          {/* Subtitle: vendor · type */}
-          <p className="mt-1 text-xs text-slate-700">{subtitle}</p>
-
-          {/* Pack size / weight from first variant title */}
-          {firstVariant?.title && firstVariant.title !== "Default Title" && (
-            <p className="mt-1 text-xs text-slate-700">
-              Pack:{" "}
-              <span className="font-medium text-slate-900">
-                {firstVariant.title}
-              </span>
-            </p>
-          )}
-
-          {/* Price */}
-          <p className="mt-3 text-base font-bold text-[#166534]">
-            {formatPrice(minPrice.amount, minPrice.currencyCode)}
-            {variants.nodes.length > 1 && (
-              <span className="ml-1 text-xs font-normal text-slate-700">
-                onwards
-              </span>
-            )}
+          </h3>
+          <p className="text-[11px] text-on-surface-variant font-body line-clamp-2 leading-relaxed opacity-60">
+            {description}
           </p>
         </div>
-      </Link>
 
-      {/* Quick-add CTA — always visible, min tap target */}
-      <div className="px-4 pb-4">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          disabled={!availableForSale}
-          onClick={handleAddToCart}
-          aria-label={
-            availableForSale
-              ? `Add ${title} to cart`
-              : `${title} is out of stock`
-          }
-          id={`add-to-cart-${handle}`}
-          className={[
-            "flex min-h-[48px] w-full items-center justify-center rounded-md text-sm font-semibold transition-colors",
-            availableForSale
-              ? "bg-[#166534] text-white hover:bg-[#14532d]"
-              : "cursor-not-allowed bg-slate-200 text-slate-500",
-          ].join(" ")}
-        >
-          {availableForSale ? "Add to Cart" : "Out of Stock"}
-        </motion.button>
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-outline-variant/5 pointer-events-auto">
+          <span className="font-headline font-semibold text-base text-primary tracking-tighter">
+            {formatPrice(minPrice.amount, minPrice.currencyCode)}
+          </span>
+          <button 
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!availableForSale}
+            aria-label="Add to cart"
+            className="text-primary hover:text-primary-container transition-all p-1.5 disabled:opacity-30 relative z-20 hover:scale-110 active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[18px]" data-icon="add_shopping_cart">add_shopping_cart</span>
+          </button>
+        </div>
       </div>
-    </motion.article>
+    </div>
   );
 }

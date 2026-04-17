@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type {
   ShopifyGraphQLResponse,
   ShopifyProduct,
@@ -77,11 +78,11 @@ export async function shopifyFetch<T>(
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
-export async function getProducts(params: {
+export const getProducts = cache(async (params: {
   first?: number;
   after?: string;
   query?: string;
-}): Promise<ShopifyProductConnection> {
+}): Promise<ShopifyProductConnection> => {
   const data = await shopifyFetch<{ products: ShopifyProductConnection }>(
     PRODUCTS_QUERY,
     {
@@ -91,17 +92,17 @@ export async function getProducts(params: {
     }
   );
   return data.products;
-}
+});
 
-export async function getProductByHandle(
+export const getProductByHandle = cache(async (
   handle: string
-): Promise<ShopifyProduct | null> {
+): Promise<ShopifyProduct | null> => {
   const data = await shopifyFetch<{ product: ShopifyProduct | null }>(
     PRODUCT_BY_HANDLE_QUERY,
     { handle }
   );
   return data.product;
-}
+});
 
 // Named alias avoids TS7022 circular inference
 type AllHandlesResponse = {
@@ -135,7 +136,7 @@ export async function getAllProductHandles(): Promise<string[]> {
 
 // ─── Collections ──────────────────────────────────────────────────────────────
 
-export async function getCollections(first = 20): Promise<ShopifyCollection[]> {
+export const getCollections = cache(async (first = 20): Promise<ShopifyCollection[]> => {
   const data = await shopifyFetch<{
     collections: {
       edges: Array<{ node: ShopifyCollection }>;
@@ -143,7 +144,7 @@ export async function getCollections(first = 20): Promise<ShopifyCollection[]> {
     };
   }>(COLLECTIONS_QUERY, { first });
   return data.collections.edges.map((e) => e.node);
-}
+});
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 

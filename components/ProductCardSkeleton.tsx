@@ -1,42 +1,34 @@
-// ─── Loading skeleton — animate-pulse, card-shaped, no shimmer gradients ─────
-
 export function ProductCardSkeleton() {
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-2xl bg-white"
+      className="flex flex-col overflow-hidden rounded-lg bg-surface-container-lowest border border-outline-variant/15"
       aria-hidden="true"
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
     >
-      {/* Image placeholder */}
-      <div className="aspect-square w-full animate-pulse bg-slate-200" />
+      <div className="h-64 w-full animate-pulse bg-surface-container-high" />
 
-      {/* Content placeholders */}
-      <div className="flex flex-col gap-2 p-4">
-        <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-1/3 animate-pulse rounded bg-slate-200" />
-        <div className="mt-1 h-5 w-1/4 animate-pulse rounded bg-slate-200" />
-      </div>
-
-      {/* Button placeholder */}
-      <div className="px-4 pb-4">
-        <div className="h-12 w-full animate-pulse rounded-md bg-slate-200" />
+      <div className="flex flex-col gap-4 p-6">
+        <div className="h-3 w-1/4 animate-pulse rounded-full bg-surface-container-high" />
+        <div className="h-6 w-3/4 animate-pulse rounded-full bg-surface-container-high" />
+        <div className="h-4 w-full animate-pulse rounded-full bg-surface-container-high" />
+        
+        <div className="mt-8 flex justify-between items-center border-t border-outline-variant/15 pt-4">
+          <div className="h-6 w-24 animate-pulse rounded-full bg-surface-container-high" />
+          <div className="h-10 w-10 animate-pulse rounded-lg bg-surface-container-high" />
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Grid of skeletons shown during loading ───────────────────────────────────
-
 export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3"
       aria-label="Loading products"
       aria-busy="true"
     >
-      {Array.from({ length: count }).map((_, i) => (
-        <ProductCardSkeleton key={i} />
+      {Array.from({ length: count }).map((_, index) => (
+        <ProductCardSkeleton key={index} />
       ))}
     </div>
   );

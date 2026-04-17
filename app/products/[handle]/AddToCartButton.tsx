@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 
@@ -8,7 +8,6 @@ interface AddToCartButtonProps {
   variantId: string;
   productTitle: string;
   available: boolean;
-  // Price in paise (passed from server component — convert amount * 100)
   priceInPaise: number;
   currencyCode: string;
   imageUrl: string | null;
@@ -39,13 +38,14 @@ export default function AddToCartButton({
       imageAlt,
       handle,
     };
+
     addItem(item);
     openCart();
   }
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.97 }}
+    <button
+      type="button"
       disabled={!available}
       onClick={handleAddToCart}
       id="product-add-to-cart"
@@ -55,13 +55,14 @@ export default function AddToCartButton({
           : `${productTitle} is out of stock`
       }
       className={[
-        "flex min-h-[48px] w-full items-center justify-center rounded-md text-base font-semibold transition-colors",
+        "flex h-[64px] w-full items-center justify-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] transition-all",
         available
-          ? "bg-[#166534] text-white hover:bg-[#14532d]"
-          : "cursor-not-allowed bg-slate-200 text-slate-500",
+          ? "bg-agro-green text-white hover:bg-agro-ink"
+          : "cursor-not-allowed bg-agro-ink/10 text-agro-muted",
       ].join(" ")}
     >
-      {available ? "Add to Cart" : "Out of Stock"}
-    </motion.button>
+      <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+      {available ? "Provision to Cart" : "Out of Stock"}
+    </button>
   );
 }
