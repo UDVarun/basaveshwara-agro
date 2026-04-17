@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import type { ShopifyProduct } from "@/types/shopify";
-import { getProductByHandle, getProducts } from "@/lib/shopify";
+import { getProductByHandle, getProducts, getAllProductHandles } from "@/lib/shopify";
 import { formatPrice } from "@/lib/format";
 import ProductGallery from "@/components/ProductGallery";
 import ProductActions from "@/components/ProductActions";

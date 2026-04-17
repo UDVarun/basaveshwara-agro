@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
+import { useRouter } from "next/navigation";
 
 export default function CheckoutPage() {
   const { state, subtotal } = useCart();
@@ -11,6 +12,15 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [sameAsShipping, setSameAsShipping] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const router = useRouter();
+
+  const handlePlaceOrder = async () => {
+    setIsPlacingOrder(true);
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    router.push("/checkout/success");
+  };
 
   const formattedPrice = (priceInPaise: number) =>
     new Intl.NumberFormat("en-IN", {
@@ -273,10 +283,20 @@ export default function CheckoutPage() {
               </div>
               <button 
                 onClick={handlePlaceOrder}
-                className="w-full bg-primary text-on-primary font-headline font-semibold py-4 rounded-md hover:bg-primary-container hover:scale-[1.02] shadow-[0_4px_20px_rgb(31,27,23,0.06)] hover:shadow-[0_8px_40px_rgb(31,27,23,0.10)] transition-all duration-300 flex items-center justify-center active:scale-[0.98]"
+                disabled={isPlacingOrder}
+                className="w-full bg-primary text-on-primary font-headline font-semibold py-4 rounded-md hover:bg-primary-container hover:scale-[1.02] shadow-[0_4px_20px_rgb(31,27,23,0.06)] hover:shadow-[0_8px_40px_rgb(31,27,23,0.10)] transition-all duration-300 flex items-center justify-center active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Place Order Securely
-                <span className="material-symbols-outlined ml-2 text-xl" data-icon="lock">lock</span>
+                {isPlacingOrder ? (
+                  <>
+                    <span className="material-symbols-outlined mr-2 animate-spin" data-icon="progress_activity">progress_activity</span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Place Order Securely
+                    <span className="material-symbols-outlined ml-2 text-xl" data-icon="lock">lock</span>
+                  </>
+                )}
               </button>
             </div>
 
