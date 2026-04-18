@@ -18,7 +18,7 @@ interface ProductsData {
 
 // Removal of fetchProducts as we now use direct library calls
 
-async function ProductsGrid({ query }: { query?: string }) {
+async function ProductsGrid({ query }: { query?: string | undefined }) {
   let data: ShopifyProductConnection;
   try {
     data = await getProducts({
