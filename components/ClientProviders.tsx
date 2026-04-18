@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionProvider } from "next-auth/react";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
 import type { ReactNode } from "react";
@@ -9,10 +10,12 @@ import type { ReactNode } from "react";
 
 export default function ClientProviders({ children }: { children: ReactNode }) {
   return (
-    <CartProvider>
-      {children}
-      {/* CartDrawer lives here so it is always mounted and can read CartContext */}
-      <CartDrawer />
-    </CartProvider>
+    <SessionProvider>
+      <CartProvider>
+        {children}
+        {/* CartDrawer lives here so it is always mounted and can read CartContext */}
+        <CartDrawer />
+      </CartProvider>
+    </SessionProvider>
   );
 }

@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { useSession } from "next-auth/react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { state, openCart } = useCart();
+  const { data: session } = useSession();
   const cartCount = state.items.reduce((acc, item) => acc + item.quantity, 0);
 
   const navLinks = [
@@ -64,9 +66,15 @@ export default function Navbar() {
             )}
           </button>
 
-          <button aria-label="Account" className="text-primary hover:scale-[1.05] transition-transform duration-300">
-            <span className="material-symbols-outlined text-[24px]" data-icon="account_circle">account_circle</span>
-          </button>
+          <Link 
+            href={session ? "/profile" : "/login"}
+            aria-label={session ? "Account" : "Login"} 
+            className="text-primary hover:scale-[1.05] transition-transform duration-300"
+          >
+            <span className="material-symbols-outlined text-[24px]" data-icon={session ? "account_circle" : "login"}>
+              {session ? "account_circle" : "login"}
+            </span>
+          </Link>
         </div>
       </div>
     </header>

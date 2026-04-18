@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { auth } from "@/auth";
 
 export const config = {
-  matcher: "/api/v1/:path*",
+  // Combine matchers: rate limit API, and handle auth for pages
+  matcher: [
+    "/api/v1/:path*",
+    "/((?!api/|_next/static|_next/image|favicon.ico).*)"
+  ],
 };
 
 // ─── Lazy rate limiter (gracefully skipped if Redis is not configured) ─────────
@@ -15,7 +20,7 @@ function getLimiter(): Ratelimit | null {
   const token = process.env["UPSTASH_REDIS_REST_TOKEN"];
 
   if (!url || !token) {
-    return null; // Allow requests through when Redis is not configured
+    return null; 
   }
 
   if (!_limiter) {
@@ -30,45 +35,52 @@ function getLimiter(): Ratelimit | null {
   return _limiter;
 }
 
-// ─── Middleware — rate limit every /api/v1/* route ────────────────────────────
+// ─── Proxy (Next.js 16 replacement for middleware) ────────────────────────────
 
 export async function proxy(req: NextRequest) {
-  const limiter = getLimiter();
+  const { pathname } = req.nextUrl;
 
-  // Skip rate limiting if Redis credentials are not configured (e.g. local dev)
-  if (!limiter) {
-    return NextResponse.next();
-  }
-
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
-
-  try {
-    const { success, remaining, reset } = await limiter.limit(ip);
-
-    if (!success) {
-      const retryAfter = Math.ceil((reset - Date.now()) / 1000);
-      return NextResponse.json(
-        {
-          error: "Store is updating inventory. Please try again.",
-        },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(retryAfter),
-            "X-RateLimit-Remaining": "0",
-          },
+  // 1. Rate Limiting for API routes
+  if (pathname.startsWith("/api/v1/")) {
+    const limiter = getLimiter();
+    if (limiter) {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+      try {
+        const { success, remaining, reset } = await limiter.limit(ip);
+        if (!success) {
+          const retryAfter = Math.ceil((reset - Date.now()) / 1000);
+          return NextResponse.json(
+            { error: "Too many requests. Please try again later." },
+            { 
+              status: 429, 
+              headers: { "Retry-After": String(retryAfter) } 
+            }
+          );
         }
-      );
+        const response = NextResponse.next();
+        response.headers.set("X-RateLimit-Remaining", String(remaining));
+        return response;
+      } catch (err) {
+        console.error("[proxy] Rate limiter error:", err);
+      }
     }
-
-    const response = NextResponse.next();
-    response.headers.set("X-RateLimit-Remaining", String(remaining));
-    return response;
-  } catch {
-    // If rate limiter throws (e.g. Redis timeout), allow the request through
-    // rather than taking down the store. Logged server-side only.
-    console.error("[middleware] Rate limiter error — request allowed through");
-    return NextResponse.next();
   }
+
+  // 2. Auth Protection for Pages
+  const session = await auth();
+  const protectedPaths = ["/profile", "/checkout"];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+
+  if (isProtectedPath && !session) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Redirect logged-in users away from login page
+  if (pathname === "/login" && session) {
+    return NextResponse.redirect(new URL("/profile", req.url));
+  }
+
+  return NextResponse.next();
 }
