@@ -23,7 +23,7 @@ async function ProductsGrid({ query }: { query?: string }) {
   try {
     data = await getProducts({
       first: 12,
-      query: query,
+      query: query || "",
     });
   } catch (error) {
     console.error("[ProductsGrid] Error fetching:", error);

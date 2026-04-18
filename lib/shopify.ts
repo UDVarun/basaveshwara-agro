@@ -20,6 +20,7 @@ import {
   CART_LINES_UPDATE_MUTATION,
   CART_LINES_REMOVE_MUTATION,
 } from "@/lib/queries/cart";
+import { CUSTOMER_QUERY } from "@/lib/queries/customer";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -74,6 +75,50 @@ export async function shopifyFetch<T>(
   }
 
   return json.data;
+}
+
+export async function customerAccountFetch<T>(
+  accessToken: string,
+  query: string,
+  variables?: Record<string, unknown>
+): Promise<T> {
+  const shopId = process.env["SHOPIFY_SHOP_ID"];
+  const endpoint = `https://shopify.com/${shopId}/account/customer/api/2025-01/graphql`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: accessToken.startsWith("Bearer ")
+        ? accessToken
+        : `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(5000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Shopify Customer API error: ${response.status}`);
+  }
+
+  const json = (await response.json()) as ShopifyGraphQLResponse<T>;
+
+  if (json.errors && json.errors.length > 0) {
+    console.error("[shopify] Customer API errors:", json.errors);
+    throw new Error("Shopify Customer API GraphQL error");
+  }
+
+  return json.data!;
+}
+
+// ─── Customer ─────────────────────────────────────────────────────────────────
+
+export async function getCustomer(accessToken: string) {
+  const data = await customerAccountFetch<{ customer: any }>(
+    accessToken,
+    CUSTOMER_QUERY
+  );
+  return data.customer;
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
