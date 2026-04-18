@@ -6,8 +6,8 @@ import Google from "next-auth/providers/google";
 export const authConfig: NextAuthConfig = {
   providers: [
     Google({
-      clientId: process.env["GOOGLE_CLIENT_ID"],
-      clientSecret: process.env["GOOGLE_CLIENT_SECRET"],
+      clientId: process.env["GOOGLE_CLIENT_ID"] || "",
+      clientSecret: process.env["GOOGLE_CLIENT_SECRET"] || "",
     }),
     {
       id: "shopify",
@@ -15,8 +15,8 @@ export const authConfig: NextAuthConfig = {
       type: "oidc",
       issuer: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}`,
       wellKnown: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}/.well-known/openid-configuration`,
-      clientId: process.env["SHOPIFY_CLIENT_ID"],
-      clientSecret: process.env["SHOPIFY_CLIENT_SECRET"],
+      clientId: process.env["SHOPIFY_CLIENT_ID"] || "",
+      clientSecret: process.env["SHOPIFY_CLIENT_SECRET"] || "",
       authorization: {
         params: {
           scope: "openid email customer_account:full",

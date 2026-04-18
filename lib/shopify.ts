@@ -82,7 +82,7 @@ export async function customerAccountFetch<T>(
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
-  const shopId = process.env["SHOPIFY_SHOP_ID"];
+  const shopId = process.env["SHOPIFY_SHOP_ID"] || "";
   const endpoint = `https://shopify.com/${shopId}/account/customer/api/2025-01/graphql`;
 
   const response = await fetch(endpoint, {
