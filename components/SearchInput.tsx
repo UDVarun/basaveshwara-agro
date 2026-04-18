@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 
@@ -36,37 +35,31 @@ export default function SearchInput() {
         }
 
         router.push(`/products?${params.toString()}`, { scroll: false });
-      }, 300);
+      }, 400); // 400ms debounce for smoother feel
     },
     [router, searchParams]
   );
 
   return (
-    <div className="w-full" role="search">
-      <label
-        htmlFor="product-search"
-        className="mb-2 block text-sm font-bold text-stone-950"
+    <div className="relative w-full max-w-[280px] group" role="search">
+      <span 
+        className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/40 material-symbols-outlined text-[20px] group-focus-within:text-primary transition-colors" 
+        aria-hidden="true"
       >
-        Search products
-      </label>
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400"
-          aria-hidden="true"
-        />
-        <input
-          id="product-search"
-          type="search"
-          name="q"
-          defaultValue={currentQuery}
-          onChange={handleChange}
-          placeholder="Search fertilizer, insecticide, seed..."
-          autoComplete="off"
-          maxLength={100}
-          aria-label="Search agricultural products"
-          className="min-h-12 w-full rounded-lg border border-stone-200 bg-white px-12 py-3 text-sm font-medium text-stone-950 shadow-sm shadow-black/5 placeholder:text-stone-400 focus:border-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-800/10"
-        />
-      </div>
+        search
+      </span>
+      <input
+        id="product-search"
+        type="search"
+        name="q"
+        defaultValue={currentQuery}
+        onChange={handleChange}
+        placeholder="Search inventory..."
+        autoComplete="off"
+        maxLength={100}
+        aria-label="Search agricultural products"
+        className="h-10 w-full rounded-full border border-outline-variant/30 bg-surface-container-low pl-10 pr-4 text-[13px] font-medium text-on-surface placeholder:text-on-surface/40 focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all"
+      />
     </div>
   );
 }
