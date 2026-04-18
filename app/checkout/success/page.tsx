@@ -3,20 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { motion } from "framer-motion";
 
 export default function SuccessPage() {
   const { state, clearCart, subtotal } = useCart();
   
-  // Capture order details before the cart is cleared
   const [orderData, setOrderData] = useState({
     items: [...state.items],
     subtotal: subtotal,
-    orderNumber: `#SB-${Math.floor(1000 + Math.random() * 9000)}`,
-    deliveryDate: "Oct 24 - Oct 26, 2024" // Static placeholder for mockup fidelity
+    orderNumber: `#BAK-${Math.floor(100000 + Math.random() * 900000)}`,
+    deliveryDate: "Oct 24 - Oct 26, 2024"
   });
 
   useEffect(() => {
-    // Clear the cart on mount to signal successful order placement
     if (state.items.length > 0) {
       clearCart();
     }
@@ -33,100 +32,115 @@ export default function SuccessPage() {
   const gstPaise = orderData.subtotal * 0.05;
   const totalPaise = orderData.subtotal + shippingPaise + gstPaise;
 
-  const getIcon = (title: string) => {
-    if (title.toLowerCase().includes("seed")) return "grass";
-    if (title.toLowerCase().includes("fertilizer") || title.toLowerCase().includes("npk")) return "science";
-    return "inventory_2";
-  };
-
   return (
-    <main className="w-full max-w-3xl mx-auto px-6 py-32 flex flex-col items-center justify-center min-h-screen">
-      {/* Success Icon */}
-      <div className="mb-12 flex justify-center items-center w-24 h-24 rounded-full bg-primary-container text-on-primary-container shadow-lg shadow-primary/10 transition-all duration-500 scale-110">
-        <span className="material-symbols-outlined text-5xl fill-icon" data-icon="check_circle" style={{ fontVariationSettings: "'FILL' 1" }}>
-          check_circle
-        </span>
-      </div>
+    <main className="w-full max-w-[1600px] mx-auto px-8 md:px-12 py-40 flex flex-col items-center min-h-screen relative overflow-hidden">
+      {/* Heritage Background Detail */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-      {/* Headline */}
-      <h1 className="font-headline font-semibold text-4xl text-primary tracking-tight text-center mb-4">
-        Order Placed Successfully!
-      </h1>
-
-      {/* Subheadline */}
-      <p className="font-body text-lg text-on-surface-variant text-center leading-relaxed mb-16 max-w-xl">
-        Thank you for your purchase. We are preparing your agricultural supplies for dispatch.
-      </p>
-
-      {/* Order Details Card */}
-      <div className="w-full bg-surface-container-lowest rounded-lg p-10 mb-16 relative shadow-[0_8px_40px_rgb(31,27,23,0.06)]">
-        <div className="absolute inset-0 border border-outline-variant opacity-15 pointer-events-none rounded-lg"></div>
-        
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 pb-10 border-b border-surface-container-high">
-          <div>
-            <span className="font-body text-xs text-on-surface-variant uppercase tracking-widest block mb-1 font-semibold">Order Number</span>
-            <span className="font-headline font-semibold text-2xl text-on-surface">{orderData.orderNumber}</span>
-          </div>
-          <div className="mt-6 md:mt-0 md:text-right">
-            <span className="font-body text-xs text-on-surface-variant uppercase tracking-widest block mb-1 font-semibold">Estimated Delivery</span>
-            <span className="font-body font-medium text-lg text-on-surface">{orderData.deliveryDate}</span>
-          </div>
+      {/* Success Emblem */}
+      <motion.div 
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 15 }}
+        className="mb-12 relative"
+      >
+        <div className="w-32 h-32 rounded-full border border-primary/10 flex items-center justify-center bg-white shadow-luxury relative z-10">
+          <span className="material-symbols-outlined text-6xl text-primary animate-pulse-slow">verified</span>
         </div>
+        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 animate-pulse opacity-20" />
+      </motion.div>
 
-        {/* Items Summary */}
-        <div className="space-y-6">
-          <h3 className="font-headline font-semibold text-xl text-primary mb-6">Order Summary</h3>
-          {orderData.items.length > 0 ? (
-            orderData.items.map((item) => (
-              <div key={item.variantId} className="flex items-center gap-6 group">
-                <div className="w-16 h-16 bg-surface-container rounded flex-shrink-0 flex items-center justify-center transition-colors group-hover:bg-surface-container-high">
-                  <span className="material-symbols-outlined text-outline" data-icon={getIcon(item.title)}>{getIcon(item.title)}</span>
-                </div>
-                <div className="flex-grow">
-                  <h4 className="font-body font-medium text-on-surface">{item.title}</h4>
-                  <p className="font-body text-sm text-on-surface-variant">Qty: {item.quantity}</p>
-                </div>
-                <div className="font-body font-semibold text-on-surface">
-                  {formattedPrice(item.price * item.quantity)}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="font-body text-on-surface-variant italic">Order processing summary...</p>
-          )}
-        </div>
-
-        {/* Total */}
-        <div className="mt-10 pt-6 border-t border-surface-container-high flex justify-between items-center">
-          <span className="font-headline font-semibold text-lg text-on-surface">Total Amount Paid</span>
-          <span className="font-headline font-semibold text-2xl text-primary">{formattedPrice(totalPaise)}</span>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-6 w-full justify-center mb-16">
-        <Link 
-          href="/products"
-          className="bg-primary text-on-primary font-body font-medium px-10 py-4 rounded hover:bg-primary-container transition-all duration-300 shadow-md hover:shadow-xl text-center active:scale-[0.98]"
-        >
-          Continue Shopping
-        </Link>
-        <button 
-          onClick={() => window.print()}
-          className="bg-surface-container-high text-on-surface font-body font-medium px-8 py-4 rounded hover:bg-surface-variant transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98]"
-        >
-          <span className="material-symbols-outlined text-xl" data-icon="print">print</span>
-          Print Invoice
-        </button>
-      </div>
-
-      {/* Reassurance Text */}
-      <div className="text-center bg-surface-container-low p-8 rounded-lg w-full border border-primary/5">
-        <p className="font-body text-sm text-on-surface-variant leading-relaxed">
-          Need assistance with your order? Our agricultural experts are here to help.<br className="hidden md:block" />
-          Reach out to us at <span className="font-bold text-primary">+91 98765 43210</span> or email <span className="font-bold text-primary shadow-sm">support@basaveshwaraagro.com</span>
+      {/* Header Attribution */}
+      <div className="text-center space-y-4 mb-20 max-w-2xl">
+        <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] font-label">Transaction Absolute Success</h4>
+        <h1 className="font-headline font-black text-5xl md:text-6xl text-primary tracking-tight leading-[0.9]">
+          Dispatch Confirmed. <br />
+          <span className="text-secondary opacity-80">Supplies Allocated.</span>
+        </h1>
+        <p className="font-body text-on-surface-variant/70 text-base leading-relaxed pt-4">
+          The heavy-logistics protocol has been initiated for your agricultural assets. A certificate of purchase has been generated for your records.
         </p>
       </div>
+
+      {/* The Receipt Structure (Architectural Layout) */}
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-5 gap-12 mb-24">
+        
+        {/* Left: Summary Box */}
+        <div className="lg:col-span-3 bg-white border border-outline-variant/10 rounded-3xl p-10 shadow-editorial relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-8">
+              <span className="text-[40px] font-black text-primary/5 font-headline select-none">OFFICIAL</span>
+           </div>
+           
+           <div className="flex justify-between items-start mb-16">
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Digital Ledger ID</span>
+                <h3 className="font-headline font-black text-2xl text-primary tracking-tight">{orderData.orderNumber}</h3>
+              </div>
+              <div className="text-right space-y-1">
+                <span className="text-[9px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Dispatch Timeline</span>
+                <p className="text-sm font-bold text-on-surface tracking-tight">{orderData.deliveryDate}</p>
+              </div>
+           </div>
+
+           <div className="space-y-8 mb-16">
+              <h5 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] border-b border-outline-variant/10 pb-4">Consolidation Status</h5>
+              {orderData.items.map((item) => (
+                <div key={item.variantId} className="flex justify-between items-center group">
+                  <div className="space-y-0.5">
+                    <p className="text-[13px] font-bold text-on-surface font-headline tracking-tight">{item.title}</p>
+                    <p className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Qty: 0{item.quantity} units</p>
+                  </div>
+                  <span className="text-[13px] font-medium text-on-surface">{formattedPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
+           </div>
+
+           <div className="pt-8 border-t border-dashed border-outline-variant/20 flex justify-between items-end">
+              <div className="space-y-2">
+                 <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest">Secured Payment Layer</span>
+                 </div>
+                 <p className="text-[9px] font-medium text-on-surface-variant/40 max-w-[200px]">Basaveshwara Agro Kendra - Trusted Agrarian Distribution Hub since inception.</p>
+              </div>
+              <div className="text-right">
+                 <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-1">Total Fiscal Value</span>
+                 <span className="text-3xl font-headline font-black text-primary tracking-tighter">{formattedPrice(totalPaise)}</span>
+              </div>
+           </div>
+        </div>
+
+        {/* Right: Actions & Trust */}
+        <div className="lg:col-span-2 space-y-8">
+           <div className="bg-primary text-on-primary rounded-3xl p-10 shadow-luxury group transition-all">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] mb-6 opacity-60">Next Operations</h3>
+              <div className="space-y-4">
+                 <Link href="/products" className="block w-full text-center py-4 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
+                    New Procurement
+                 </Link>
+                 <button onClick={() => window.print()} className="w-full py-4 border border-white/10 hover:border-white/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-lg">print</span>
+                    Export Receipt
+                 </button>
+              </div>
+           </div>
+
+           <div className="bg-surface-container-low/30 border border-outline-variant/10 rounded-3xl p-8 space-y-6">
+              <div className="flex items-center gap-4">
+                 <span className="material-symbols-outlined text-secondary">support_agent</span>
+                 <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Priority Desk</span>
+              </div>
+              <p className="text-[11px] font-medium text-on-surface-variant leading-relaxed">
+                Need immediate clarification regarding your dispatch? Our logistics directors are available for live consultation.
+              </p>
+              <div className="space-y-2">
+                 <p className="text-sm font-black text-primary tracking-tight">+91 98765 43210</p>
+                 <p className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest underline underline-offset-4">support@basaveshwaraagro.com</p>
+              </div>
+           </div>
+        </div>
+      </div>
+
     </main>
   );
 }

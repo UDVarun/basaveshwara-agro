@@ -1,44 +1,121 @@
-import type { Metadata } from "next";
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-
-export const metadata: Metadata = {
-  title: "The Heritage | Sri Basaveshwara Agro Kendra",
-  description: "Understanding fifteen years of agricultural dedication. Our legacy of biological precision and farmer-first expertise.",
-};
+import { motion } from "framer-motion";
 
 export default function AboutPage() {
   return (
-    <main className="bg-surface font-body text-on-surface antialiased">
-      {/* Hero Section: Immersive Storytelling */}
-      <section className="relative min-h-[calc(100vh-64px)] flex items-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
+    <main className="bg-surface font-body text-on-surface antialiased overflow-x-hidden">
+      {/* Heritage Village Hero: Roots of the Valley */}
+      <section className="relative h-[calc(100vh-80px)] flex items-center justify-center bg-black overflow-hidden py-8 md:py-16">
+        
+        {/* Full-Bleed Heritage Canvas */}
+        <motion.div 
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute inset-0 z-0 bg-black"
+        >
           <Image 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDSUvMwVjO1lGSGTQK2e0-PbDM4hawKu95vgpUuqRNWmTQTXixH3fmBNy-GFZY6nVU8jhCvWLNt8prKuZmmQbwTcpAS5ke5jksK5n84uXo_yCRuRNKeaT49aI9rkqib4Up9co2-8rEtOnhIU9CDGcUjHXojA7OSaQsOWhE04LjfTaE4GpCJi038NDrjrTNge4B7SOj2IYqo1bxQCOL7S7cqErDfK_PpzLENLgPHlzhlrm06NtHY7mbGACp0_0J6Q29JuaTR7DOtJg"
-            alt="Aerial drone shot of lush green terraced agricultural fields"
+            src="/heritage_village_premium_dark_1776451478392.png"
+            alt="Traditional Malnad Village Heritage Chikkamagaluru"
             fill
-            className="object-cover grayscale-[20%] brightness-75"
+            className="object-cover opacity-60"
             priority
           />
-        </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-8 w-full">
-          <div className="max-w-3xl">
-            <span className="inline-block px-3 py-1 mb-6 bg-secondary-container text-on-secondary-fixed font-bold text-[10px] uppercase tracking-widest rounded-full">Established 2009</span>
-            <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tighter text-white mb-6 leading-[1.0]">
-              Roots That Run <br/> Deep.
-            </h1>
-            <p className="text-lg lg:text-xl text-stone-200 leading-relaxed max-w-lg font-medium opacity-90">
-              Fifteen years of redefining the intersection of traditional wisdom and modern agrarian technology.
-            </p>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-primary/30" />
+        </motion.div>
+
+        {/* Layered Heritage Content */}
+        <div className="relative z-10 max-w-[1500px] mx-auto w-full px-6 flex flex-col items-center">
+          
+          {/* Top Metadata Header - Heritage Focus */}
+          <motion.div 
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex items-center gap-8 mb-12 py-3 border-b border-white/20"
+          >
+            <div className="space-y-0.5">
+              <span className="text-[8px] text-secondary-container font-black uppercase tracking-[0.4em]">Archive 01</span>
+              <div className="text-white font-headline text-base font-bold uppercase tracking-tighter">The Village</div>
+            </div>
+            <div className="w-[1px] h-6 bg-white/20" />
+            <div className="space-y-0.5">
+              <span className="text-[8px] text-secondary-container font-black uppercase tracking-[0.4em]">District</span>
+              <div className="text-white font-headline text-base font-bold tracking-tight">Malnad Region</div>
+            </div>
+            <div className="w-[1px] h-6 bg-white/20" />
+            <div className="space-y-0.5">
+              <span className="text-[8px] text-secondary-container font-black uppercase tracking-[0.4em]">Legacy</span>
+              <div className="text-white font-headline text-base font-bold italic opacity-80">Since 2009</div>
+            </div>
+          </motion.div>
+
+          {/* Central Narrative Block */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center w-full">
+            <div className="lg:col-span-8">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-6xl md:text-8xl lg:text-[90px] font-headline font-bold text-white tracking-[-0.05em] leading-[0.85] mb-8"
+              >
+                Grounded <br />
+                <span className="text-secondary-container italic font-light opacity-90 text-[0.8em]">in Heritage.</span>
+              </motion.h1>
+              
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="max-w-xl border-l-[2px] border-secondary/50 pl-8"
+              >
+                <p className="text-base md:text-lg text-white/80 leading-relaxed font-body mb-6">
+                  Deeply rooted in the ancestral wisdom of Chikkamagaluru, Sri Basaveshwara Agro Kendra has served the village valley for fifteen years with honor.
+                </p>
+                <div className="flex gap-12 items-center">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-headline font-black text-white">15</span>
+                    <span className="text-[8px] text-secondary-container uppercase tracking-widest font-bold">Year Honor</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-headline font-black text-white">3.4k</span>
+                    <span className="text-[8px] text-secondary-container uppercase tracking-widest font-bold">Valley Height</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Right Side: Floating Modular Detail */}
+            <motion.div 
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="lg:col-span-4 hidden lg:block"
+            >
+              <div className="bg-white/5 backdrop-blur-3xl p-8 rounded-sm border border-white/10 shadow-2xl space-y-6">
+                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-white text-2xl font-light">temple_hindu</span>
+                </div>
+                <p className="text-white text-xl font-headline font-bold leading-tight tracking-tight">
+                  &quot;Preserving the ancestral connection between the soil and its faithful stewards.&quot;
+                </p>
+                <div className="h-px w-full bg-white/10" />
+                <Link href="/products" className="flex items-center gap-3 text-secondary font-headline font-black text-[9px] uppercase tracking-widest hover:tracking-[0.2em] transition-all group">
+                  Our Roots
+                  <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">north_east</span>
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </div>
-        
-        {/* Floating Quote Card */}
-        <div className="absolute bottom-8 right-8 z-10 hidden lg:block">
-          <div className="bg-surface-container-lowest/10 backdrop-blur-md p-6 rounded-xl border border-white/15 max-w-[280px]">
-            <p className="text-white text-sm font-medium italic leading-relaxed opacity-90">&quot;The land doesn&apos;t just grow crops; it nurtures legacies. We are the stewards of that cycle.&quot;</p>
-          </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-20">
+          <div className="w-px h-8 bg-white" />
         </div>
+
       </section>
 
       {/* Our Heritage: Asymmetric Layout */}
@@ -181,12 +258,12 @@ export default function AboutPage() {
               "https://lh3.googleusercontent.com/aida-public/AB6AXuDb-5gkSx8rQYASA2M2peIb0cnbM0ql0wXnedTLBbswsxnsaroKNIt10TCKJ2Rw8sw-Xt_Sa0bAkKrFs9fTbvPMdIhvxTdirZ9PTZDcmwb_K7LeTo0L38lDTnBhJZveCMBAHnyuuQUwyHdYsVZEfyeaxgzo9PxCvZdPV1023ob978IOl1yoYNkXS-xslQe4F-ChHLrh7MP7dLna77i_TDHxVWTb02KUpi75dv07iOB1d4o993aOSxptY-59tBia-G38KTYEiALNAuA",
               "https://lh3.googleusercontent.com/aida-public/AB6AXuC27smQCCgJFLaj5UsrJIrflLHHC6piSmR_PkoMHtc6eGapiDhkYomK6ZoQHPjepYRtpi1f6ozHFZUlA1z22or6ZQPaNSO8ANu2E16314AKLpWCra0P2FIOx22Ywk2d2zqAIoZNx_z8C8pOa5oh7ukTuozvA5j0UHdUI1Q1iQc4oKiNwuTOjTgXAh90ZVAAKwCbipOkUuqmSPnv0rPuPJ8zZI-8tHuhm50bDZyzEL6QK62CLYbLjlL8ewhTFYwvNsv1An6yiduZBZQ"
             ].map((src, i) => (
-              <div key={i} className={`relative h-64 overflow-hidden rounded-lg group ${i % 2 === 1 ? 'translate-y-8' : ''}`}>
+              <div key={i} className={`relative h-64 overflow-hidden rounded-2xl group transition-all duration-500 hover:scale-[1.05] ${i % 2 === 0 ? 'hover:rotate-3' : 'hover:-rotate-3'} ${i % 2 === 1 ? 'translate-y-8' : ''}`}>
                 <Image 
                   src={src}
                   alt="Gallery image"
                   fill
-                  className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                  className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
                 />
               </div>
             ))}

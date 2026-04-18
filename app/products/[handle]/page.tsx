@@ -11,8 +11,6 @@ import ProductCard from "@/components/ProductCard";
 
 const HandleSchema = z.string().min(1).max(100);
 
-// Removal of fetch helpers — using direct Shopify library calls
-
 interface PageParams {
   params: Promise<{ handle: string }>;
 }
@@ -22,7 +20,6 @@ export const revalidate = 3600; // Revalidate every hour
 export async function generateStaticParams() {
   try {
     const handles = await getAllProductHandles();
-    // Pre-render the first 50 products for near-instant transitions
     return handles.slice(0, 50).map((handle) => ({
       handle: handle,
     }));
@@ -52,10 +49,9 @@ export default async function ProductDetailPage({ params }: PageParams) {
   const parsed = HandleSchema.safeParse(handle);
   if (!parsed.success) notFound();
 
-  // Parallelize the primary fetch and related products discovery
   const [product, relatedData] = await Promise.all([
     getProductByHandle(parsed.data),
-    getProducts({ first: 8 }) // Fetch more to filter current product effectively
+    getProducts({ first: 8 })
   ]);
 
   if (!product) notFound();
@@ -67,7 +63,6 @@ export default async function ProductDetailPage({ params }: PageParams) {
 
   const firstVariant = product.variants.nodes[0];
   
-  // Calculate discount if applicable
   const hasDiscount = firstVariant?.compareAtPrice && 
                       parseFloat(firstVariant.compareAtPrice.amount) > parseFloat(firstVariant.price.amount);
   const discountPercent = hasDiscount 
@@ -75,198 +70,182 @@ export default async function ProductDetailPage({ params }: PageParams) {
     : 0;
 
   return (
-    <main className="bg-surface pb-24 font-body text-on-surface antialiased pt-24">
-      <div className="max-w-7xl mx-auto px-6 md:px-12">
-        {/* Breadcrumbs */}
-        <nav aria-label="Breadcrumb" className="flex text-[11px] text-on-surface-variant font-label mb-8 overflow-x-auto no-scrollbar whitespace-nowrap">
-          <ol className="flex items-center space-x-2">
-            <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
-            <li><span className="material-symbols-outlined text-xs">chevron_right</span></li>
-            <li><Link href="/products" className="hover:text-primary transition-colors">Inventory</Link></li>
-            <li><span className="material-symbols-outlined text-xs">chevron_right</span></li>
-            <li className="text-on-surface-variant/60">{product.productType || "Resources"}</li>
-            <li><span className="material-symbols-outlined text-xs">chevron_right</span></li>
-            <li aria-current="page" className="text-primary font-bold">{product.title}</li>
+    <main className="bg-white pb-32 font-body text-on-surface antialiased pt-40">
+      <div className="max-w-[1600px] mx-auto px-8 md:px-12">
+        
+        {/* Architectural Breadcrumbs */}
+        <nav aria-label="Breadcrumb" className="mb-16 border-b border-outline-variant/10 pb-6">
+          <ol className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-on-surface-variant/40">
+            <li><Link href="/" className="hover:text-primary transition-colors">Legacy</Link></li>
+            <li className="w-1 h-1 bg-secondary rounded-full" />
+            <li><Link href="/products" className="hover:text-primary transition-colors">Assets</Link></li>
+            <li className="w-1 h-1 bg-secondary rounded-full" />
+            <li className="text-primary">{product.title}</li>
           </ol>
         </nav>
 
-        {/* Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
-          {/* Left: Gallery */}
-          <div className="lg:col-span-7">
+        {/* Product Section: Strategic Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 xl:gap-32 items-start text-primary">
+          {/* Left: Visual Asset Gallery */}
+          <div className="lg:col-span-7 xl:col-span-7">
             <ProductGallery 
               images={product.images.nodes} 
               title={product.title} 
             />
           </div>
 
-          {/* Right: Details */}
-          <div className="lg:col-span-5 flex flex-col h-full">
-            <div className="mb-2">
-              <span className="text-secondary font-bold font-label text-[10px] uppercase tracking-[0.3em]">{product.vendor}</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tighter text-on-surface mb-4 leading-tight">
-              {product.title}
-            </h1>
-            
-            <div className="flex items-center space-x-4 mb-8">
-              <div className="flex items-center text-secondary">
-                {[1, 2, 3, 4].map(i => (
-                  <span key={i} className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                ))}
-                <span className="material-symbols-outlined text-lg">star_half</span>
+          {/* Right: Asset Specification */}
+          <div className="lg:col-span-5 xl:col-span-5 flex flex-col space-y-10">
+            <header className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <span className="h-6 w-1 bg-secondary rounded-full" />
+                 <h4 className="text-[11px] font-black text-secondary uppercase tracking-[0.4em] font-label">
+                   {product.vendor} Biological Suite
+                 </h4>
               </div>
-              <span className="text-on-surface-variant text-xs font-bold font-label opacity-60 uppercase tracking-widest">(128 Farmer Reviews)</span>
-            </div>
+              <h1 className="text-5xl md:text-7xl font-headline font-black tracking-tighter leading-[0.85] uppercase">
+                {product.title}
+              </h1>
+              
+              <div className="flex items-center gap-4 py-4 px-6 bg-surface-container-low rounded-2xl border border-outline-variant/5 w-fit">
+                <div className="flex items-center text-secondary/40">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <span key={i} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                  ))}
+                </div>
+                <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em]">Verified Performance Record</span>
+              </div>
+            </header>
 
-            <div className="flex items-end space-x-4 mb-8">
-              <span className="text-4xl font-headline font-bold text-primary tracking-tighter">
-                {firstVariant ? formatPrice(firstVariant.price.amount, firstVariant.price.currencyCode) : "Price on request"}
-              </span>
-              {hasDiscount && (
-                <>
-                  <span className="text-xl text-on-surface-variant/40 line-through font-medium mb-1">
-                    {formatPrice(firstVariant.compareAtPrice!.amount, firstVariant.compareAtPrice!.currencyCode)}
+            <div className="space-y-2">
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Consolidated Valuation</span>
+               <div className="flex items-baseline gap-6">
+                  <span className="text-5xl md:text-6xl font-headline font-black tracking-tighter">
+                    {firstVariant ? formatPrice(firstVariant.price.amount, firstVariant.price.currencyCode) : "Quote Requested"}
                   </span>
-                  <span className="text-sm text-secondary font-bold mb-2 bg-secondary/10 px-2 py-0.5 rounded-full">-{discountPercent}%</span>
-                </>
-              )}
+                  {hasDiscount && (
+                    <div className="flex items-center gap-3">
+                       <span className="text-2xl text-on-surface-variant/30 line-through font-headline font-black tracking-tighter">
+                         {formatPrice(firstVariant.compareAtPrice!.amount, firstVariant.compareAtPrice!.currencyCode)}
+                       </span>
+                       <span className="text-[10px] font-black text-white bg-secondary px-3 py-1 rounded-full uppercase tracking-tighter">-{discountPercent}%</span>
+                    </div>
+                  )}
+               </div>
             </div>
 
-            <p className="text-on-surface-variant/80 font-medium leading-relaxed text-lg mb-10">
+            <p className="text-on-surface-variant text-xl md:text-2xl font-headline font-black tracking-tight leading-tight opacity-70">
               {product.description}
             </p>
 
-            {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 mb-10 py-8 border-y border-outline-variant/20">
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant/10 shadow-sm">
-                  <span className="material-symbols-outlined text-2xl">verified</span>
+            {/* Performance Indicators */}
+            <div className="grid grid-cols-3 gap-6 py-10 border-y border-outline-variant/10">
+              {[
+                { label: "Governance", icon: "verified", value: "Certified" },
+                { label: "Logistics", icon: "local_shipping", value: "Priority" },
+                { label: "Biological", icon: "biotech", value: "Optimized" }
+              ].map((spec, i) => (
+                <div key={i} className="flex flex-col items-center text-center space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center border border-outline-variant/5 shadow-editorial">
+                    <span className="material-symbols-outlined text-2xl opacity-40">{spec.icon}</span>
+                  </div>
+                  <div className="space-y-1">
+                     <span className="block text-[9px] font-black uppercase tracking-[0.3em] opacity-20">{spec.label}</span>
+                     <span className="block text-[10px] font-black uppercase tracking-widest">{spec.value}</span>
+                  </div>
                 </div>
-                <span className="text-[10px] font-bold text-on-surface font-label uppercase tracking-widest">Genuine Product</span>
-              </div>
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant/10 shadow-sm">
-                  <span className="material-symbols-outlined text-2xl">receipt_long</span>
-                </div>
-                <span className="text-[10px] font-bold text-on-surface font-label uppercase tracking-widest">GST Invoice</span>
-              </div>
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant/10 shadow-sm">
-                  <span className="material-symbols-outlined text-2xl">storefront</span>
-                </div>
-                <span className="text-[10px] font-bold text-on-surface font-label uppercase tracking-widest">Authorized</span>
-              </div>
+              ))}
             </div>
 
-            {/* Client Actions Component */}
-            <ProductActions 
-              variants={product.variants.nodes}
-              productTitle={product.title}
-              handle={product.handle}
-              featuredImage={product.featuredImage}
-            />
-
-            <div className="mt-auto">
-              <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10 flex items-start space-x-3">
-                <span className="material-symbols-outlined text-primary text-xl">info</span>
-                <p className="text-xs text-on-surface-variant font-medium leading-relaxed">
-                  For bulk biological orders or wholesale inquiries, please 
-                  <Link href="/contact" className="text-primary font-bold hover:underline ml-1">contact dealer support</Link>.
-                </p>
-              </div>
+            {/* Procurement Actions */}
+            <div className="product-actions-wrapper">
+               <ProductActions 
+                 variants={product.variants.nodes}
+                 productTitle={product.title}
+                 handle={product.handle}
+                 featuredImage={product.featuredImage}
+               />
             </div>
+
+            <footer className="pt-6">
+               <div className="bg-surface-container p-6 rounded-3xl border border-outline-variant/10 flex items-start gap-4">
+                  <span className="material-symbols-outlined text-secondary text-2xl">help</span>
+                  <p className="text-[11px] text-on-surface-variant font-bold leading-relaxed uppercase tracking-widest">
+                    Consult our institutional advisors for bulk procurement strategies.
+                    <Link href="/contact" className="text-secondary block mt-2 hover:underline">Strategic Consultation</Link>
+                  </p>
+               </div>
+            </footer>
           </div>
         </div>
 
-        {/* Details Bento Section */}
-        <div className="mt-32 pt-16 border-t border-outline-variant/20">
-          <div className="flex flex-col lg:flex-row gap-12">
-            <div className="lg:w-2/3">
-              <h3 className="text-3xl font-headline font-bold text-primary mb-8 tracking-tighter">Agronomic Assessment</h3>
-              <div className="bg-surface-container-low p-10 rounded-[2.5rem] shadow-editorial border border-outline-variant/5">
-                <div className="prose prose-stone prose-lg font-body leading-relaxed text-on-surface-variant max-w-none">
-                  {product.descriptionHtml ? (
-                    <div dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
-                  ) : (
-                    <p>{product.description}</p>
-                  )}
-                </div>
-              </div>
-              
-              {/* Dynamic Guidelines Grid (Visible for Seeds/Fertilizers) */}
-              {["Seed", "Fertilizer"].includes(product.productType) && (
-                <div className="mt-8 bg-primary text-white p-10 rounded-[2.5rem] shadow-editorial">
-                  <h4 className="text-xl font-headline font-bold mb-10 flex items-center gap-3">
-                    <span className="material-symbols-outlined">analytics</span>
-                    Cultivation Protocol
-                  </h4>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Technical Specification Section */}
+        <div className="mt-48 pt-24 border-t border-outline-variant/10 grid grid-cols-1 lg:grid-cols-12 gap-20">
+            <div className="lg:col-span-8 space-y-12">
+               <div className="space-y-4">
+                  <h4 className="text-[11px] font-black text-secondary uppercase tracking-[0.4em]">Resource Brief</h4>
+                  <h3 className="text-5xl md:text-7xl font-headline font-black text-primary tracking-tight leading-none uppercase">Agronomic <br/> Assessment.</h3>
+               </div>
+               
+               <div className="bg-surface-container-low p-12 lg:p-20 rounded-[3rem] border border-outline-variant/5 shadow-luxury overflow-hidden relative">
+                 <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                    <span className="font-headline font-black text-[100px]">BAK</span>
+                 </div>
+                 <div className="prose prose-stone prose-2xl font-headline font-black tracking-tight leading-[1.1] text-primary max-w-none opacity-80 uppercase">
+                   {product.descriptionHtml ? (
+                     <div dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
+                   ) : (
+                     <p>{product.description}</p>
+                   )}
+                 </div>
+               </div>
+            </div>
+
+            <div className="lg:col-span-4 lg:mt-32">
+               <div className="bg-primary p-12 rounded-[2.5rem] shadow-editorial sticky top-32">
+                  <h3 className="text-[11px] font-black text-secondary uppercase tracking-[0.5em] mb-12 flex items-center gap-4 italic underline underline-offset-8">
+                    Institutional Certification
+                  </h3>
+                  <ul className="space-y-8">
                     {[
-                      { label: "Stability", icon: "landscape", value: "High Loam Precision" },
-                      { label: "Interval", icon: "calendar_today", value: "90-110 Days" },
-                      { label: "Optimal Rate", icon: "scale", value: "100g / Acre" },
-                      { label: "Geometry", icon: "straighten", value: "90cm x 60cm" }
-                    ].map((item, idx) => (
-                      <div key={idx}>
-                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-2">{item.label}</div>
-                        <div className="flex items-center gap-2 font-medium">
-                          <span className="material-symbols-outlined text-secondary opacity-80">{item.icon}</span>
-                          <span>{item.value}</span>
+                      "Verified Biological Purity Score",
+                      "Climate-Resistant Optimization",
+                      "High-Density Growth Potential",
+                      "Regional Soil DNA Alignment"
+                    ].map((benefit, i) => (
+                      <li key={i} className="flex items-center gap-6 group">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-secondary transition-all">
+                          <span className="material-symbols-outlined text-white text-sm">verified</span>
                         </div>
-                      </div>
+                        <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">{benefit}</span>
+                      </li>
                     ))}
+                  </ul>
+                  
+                  <div className="mt-16 pt-10 border-t border-white/10 flex items-center gap-6">
+                     <span className="material-symbols-outlined text-white/20 text-4xl">eco</span>
+                     <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] leading-relaxed">
+                        Authorized Distribution <br/> Professional Grade Assets
+                     </p>
                   </div>
-                </div>
-              )}
+               </div>
             </div>
-
-            <div className="lg:w-1/3">
-              <div className="bg-white p-10 rounded-[2.5rem] shadow-editorial border border-outline-variant/10 h-full flex flex-col">
-                <h3 className="text-xl font-headline font-bold text-primary mb-8 flex items-center gap-2 tracking-tighter">
-                  <span className="material-symbols-outlined text-secondary">workspace_premium</span>
-                  Resource Certification
-                </h3>
-                <ul className="space-y-6 flex-grow">
-                  {[
-                    "Verified Biological Purity",
-                    "Climate-Resistant Optimization",
-                    "High Logistics Stability",
-                    "Certified Manufacturer Warranty"
-                  ].map((benefit, i) => (
-                    <li key={i} className="flex items-start gap-4">
-                      <div className="w-6 h-6 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                        <span className="material-symbols-outlined text-secondary text-sm">check</span>
-                      </div>
-                      <span className="text-on-surface-variant font-medium leading-snug">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-12 pt-8 border-t border-outline-variant/20">
-                  <div className="flex items-center gap-3 text-secondary font-bold text-xs uppercase tracking-widest">
-                    <span className="material-symbols-outlined">verified</span>
-                    Stewardship Record 100%
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Related Products */}
-        <div className="mt-32">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <h2 className="text-4xl font-headline font-bold text-primary tracking-tighter">Strategic Provisions</h2>
-              <p className="text-on-surface-variant font-medium mt-2">Compatible resources for your current selection.</p>
+        {/* Related Strategy Matrix */}
+        <div className="mt-48 pt-24 border-t border-outline-variant/10">
+          <div className="flex items-end justify-between mb-20">
+            <div className="space-y-6">
+              <h4 className="text-[11px] font-black text-secondary uppercase tracking-[0.4em]">Asset Suite</h4>
+              <h2 className="text-5xl md:text-8xl font-headline font-black text-primary tracking-tighter leading-none uppercase">Strategic <br/> Compatibility.</h2>
             </div>
-            <Link href="/products" className="text-primary font-bold hover:underline flex items-center group font-label text-sm uppercase tracking-widest">
-              View Inventory
-              <span className="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            <Link href="/products" className="group flex flex-col items-end gap-2">
+              <span className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">Inventory Index</span>
+              <span className="material-symbols-outlined text-primary text-5xl group-hover:translate-x-4 transition-transform">arrow_forward</span>
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {relatedProducts?.filter(p => p.handle !== product.handle).slice(0, 4).map((rp) => (
               <ProductCard key={rp.id} product={rp} />
             ))}

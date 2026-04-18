@@ -71,7 +71,7 @@ function QuantityStepper({
 }
 
 export default function CartDrawer() {
-  const { state, closeCart, subtotal, totalQuantity } = useCart();
+  const { state, closeCart, subtotal, totalQuantity, removeItem } = useCart();
   const { isOpen, items } = state;
 
   const handleKeyDown = useCallback(

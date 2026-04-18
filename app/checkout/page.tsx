@@ -5,6 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+
+const STEPS = ["Cart", "Shipping", "Confirmation"];
 
 export default function CheckoutPage() {
   const { state, subtotal } = useCart();
@@ -17,8 +20,8 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // Simulate luxury processing
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push("/checkout/success");
   };
 
@@ -35,276 +38,228 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <main className="pt-32 pb-24 max-w-7xl mx-auto px-8 min-h-[60vh] flex flex-col items-center justify-center text-center">
-        <span className="material-symbols-outlined text-6xl text-outline mb-6" data-icon="shopping_basket">shopping_basket</span>
-        <h1 className="font-headline font-semibold text-4xl tracking-tight text-on-surface">Checkout Unavailable</h1>
-        <p className="font-body text-on-surface-variant mt-4 text-lg max-w-md">
-          Your cart is currently empty. Please add items to your cart before proceeding to checkout.
+      <main className="pt-40 pb-24 max-w-[1600px] mx-auto px-8 md:px-12 min-h-[70vh] flex flex-col items-center justify-center text-center">
+        <div className="w-20 h-20 bg-surface-container rounded-full flex items-center justify-center mb-8 border border-outline-variant/10">
+          <span className="material-symbols-outlined text-4xl text-primary/40">shopping_basket</span>
+        </div>
+        <h1 className="font-headline font-black text-4xl tracking-tight text-primary mb-4">Your Session is Empty</h1>
+        <p className="font-body text-on-surface-variant max-w-sm mb-10 text-base opacity-70">
+          Begin your agricultural procurement journey by selecting from our curated range of biological assets.
         </p>
         <Link 
           href="/products" 
-          className="mt-8 bg-primary hover:bg-primary-container text-on-primary font-body font-medium py-3 px-8 rounded-lg transition-colors"
+          className="bg-primary text-on-primary font-headline font-bold uppercase tracking-widest text-xs px-10 py-4 rounded-xl hover:translate-y-[-2px] transition-all shadow-lg active:translate-y-0"
         >
-          View Products
+          Browse Inventory
         </Link>
       </main>
     );
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-8 pt-32 pb-24">
-      <div className="mb-12">
-        <h1 className="font-headline text-4xl font-semibold text-on-surface mb-2 tracking-tight">Checkout</h1>
-        <p className="font-body text-on-surface-variant text-lg">Securely complete your agricultural supply order.</p>
+    <main className="max-w-[1600px] mx-auto px-8 md:px-12 pt-40 pb-24 relative overflow-hidden">
+      {/* Visual Header & Stepper */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-16 gap-8">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+             <span className="h-10 w-1 bg-secondary rounded-full" />
+             <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] font-label">Checkout Portal</h4>
+          </div>
+          <h1 className="font-headline text-4xl md:text-5xl font-black text-primary tracking-tight leading-[0.9]">
+            Secure Procurement <br className="hidden md:block" />
+            <span className="text-secondary opacity-80">& Order Finalization.</span>
+          </h1>
+        </div>
+
+        {/* Stepper Component */}
+        <div className="flex items-center gap-12 pt-4">
+          {STEPS.map((step, idx) => (
+            <div key={step} className="flex items-center gap-4 group">
+              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all ${
+                idx === 1 
+                  ? "bg-primary text-on-primary border-primary shadow-[0_4px_12px_rgba(30,93,74,0.2)]" 
+                  : idx === 0 ? "border-primary text-primary opacity-40" : "border-outline-variant/30 text-outline-variant"
+              }`}>
+                {idx + 1}
+              </span>
+              <span className={`text-[10px] uppercase tracking-[0.2em] font-bold ${
+                idx === 1 ? "text-primary" : "text-on-surface-variant/30"
+              }`}>
+                {step}
+              </span>
+              {idx < STEPS.length - 1 && (
+                <div className="w-12 h-px bg-outline-variant/10 ml-4 hidden sm:block" />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        {/* Left Column: Forms */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-12">
-          {/* Shipping Address Section */}
-          <section className="bg-surface-container-low p-8 lg:p-10 rounded-lg">
-            <h2 className="font-headline text-2xl font-semibold text-on-surface mb-6 flex items-center">
-              <span className="material-symbols-outlined mr-3 text-primary" data-icon="local_shipping">local_shipping</span>
-              Shipping Information
-            </h2>
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block font-body text-sm font-medium text-on-surface-variant mb-1" htmlFor="first_name">First Name</label>
-                  <input 
-                    className="w-full bg-surface-container-high border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 px-4 py-3 text-on-surface transition-colors outline-none" 
-                    id="first_name" 
-                    name="first_name" 
-                    placeholder="Farmer" 
-                    type="text" 
-                  />
-                </div>
-                <div>
-                  <label className="block font-body text-sm font-medium text-on-surface-variant mb-1" htmlFor="last_name">Last Name</label>
-                  <input 
-                    className="w-full bg-surface-container-high border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 px-4 py-3 text-on-surface transition-colors outline-none" 
-                    id="last_name" 
-                    name="last_name" 
-                    placeholder="Gowda" 
-                    type="text" 
-                  />
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 xl:gap-24">
+        {/* Left Column: Form Architecture */}
+        <div className="lg:col-span-12 xl:col-span-8 space-y-16">
+          
+          {/* Section: Shipping */}
+          <section className="space-y-10 group">
+            <div className="flex items-center gap-6">
+              <span className="w-px h-12 bg-outline-variant opacity-20" />
+              <div className="space-y-1">
+                <h2 className="font-headline text-xl font-bold text-primary uppercase tracking-wider">I. Logistics & Destination</h2>
+                <p className="text-xs text-on-surface-variant/60 font-medium">Verify your regional dispatch details for optimal supply chain routing.</p>
               </div>
-              <div>
-                <label className="block font-body text-sm font-medium text-on-surface-variant mb-1" htmlFor="address">Street Address</label>
-                <input 
-                  className="w-full bg-surface-container-high border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 px-4 py-3 text-on-surface transition-colors outline-none" 
-                  id="address" 
-                  name="address" 
-                  placeholder="123 Agrarian Way" 
-                  type="text" 
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block font-body text-sm font-medium text-on-surface-variant mb-1" htmlFor="city">City / District</label>
-                  <input 
-                    className="w-full bg-surface-container-high border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 px-4 py-3 text-on-surface transition-colors outline-none" 
-                    id="city" 
-                    name="city" 
-                    placeholder="Hubballi" 
-                    type="text" 
-                  />
-                </div>
-                <div>
-                  <label className="block font-body text-sm font-medium text-on-surface-variant mb-1" htmlFor="pincode">Pincode</label>
-                  <input 
-                    className="w-full bg-surface-container-high border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 px-4 py-3 text-on-surface transition-colors outline-none" 
-                    id="pincode" 
-                    name="pincode" 
-                    placeholder="580020" 
-                    type="text" 
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block font-body text-sm font-medium text-on-surface-variant mb-1" htmlFor="phone">Phone Number (For Delivery Updates)</label>
-                <input 
-                  className="w-full bg-surface-container-high border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 px-4 py-3 text-on-surface transition-colors outline-none" 
-                  id="phone" 
-                  name="phone" 
-                  placeholder="+91 98765 43210" 
-                  type="tel" 
-                />
-              </div>
-            </form>
-          </section>
-
-          {/* Billing Address Section */}
-          <section className="bg-surface-container-low p-8 lg:p-10 rounded-lg">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-headline text-2xl font-semibold text-on-surface flex items-center tracking-tight">
-                <span className="material-symbols-outlined mr-3 text-primary" data-icon="receipt_long">receipt_long</span>
-                Billing Address
-              </h2>
             </div>
-            <div className="flex items-center space-x-3">
-              <input 
-                checked={sameAsShipping} 
-                onChange={(e) => setSameAsShipping(e.target.checked)}
-                className="h-5 w-5 rounded-sm border-outline text-primary focus:ring-primary-container bg-surface-container-high" 
-                id="same_as_shipping" 
-                name="same_as_shipping" 
-                type="checkbox" 
-              />
-              <label className="font-body text-on-surface-variant" htmlFor="same_as_shipping">Same as Shipping Address</label>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+              <div className="relative group/input">
+                <input type="text" id="fname" className="peer w-full bg-transparent border-b-2 border-outline-variant/20 py-4 font-body text-base text-on-surface outline-none focus:border-primary transition-all placeholder:text-transparent" placeholder="First Name" />
+                <label htmlFor="fname" className="absolute left-0 top-1 text-[10px] font-bold text-primary/40 uppercase tracking-widest transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-1 peer-focus:text-[10px]">First Name</label>
+              </div>
+              <div className="relative group/input">
+                <input type="text" id="lname" className="peer w-full bg-transparent border-b-2 border-outline-variant/20 py-4 font-body text-base text-on-surface outline-none focus:border-primary transition-all placeholder:text-transparent" placeholder="Last Name" />
+                <label htmlFor="lname" className="absolute left-0 top-1 text-[10px] font-bold text-primary/40 uppercase tracking-widest transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-1 peer-focus:text-[10px]">Last Name</label>
+              </div>
+              <div className="md:col-span-2 relative group/input">
+                <input type="text" id="addr" className="peer w-full bg-transparent border-b-2 border-outline-variant/20 py-4 font-body text-base text-on-surface outline-none focus:border-primary transition-all placeholder:text-transparent" placeholder="Address" />
+                <label htmlFor="addr" className="absolute left-0 top-1 text-[10px] font-bold text-primary/40 uppercase tracking-widest transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-1 peer-focus:text-[10px]">Territory / Street Address</label>
+              </div>
+              <div className="relative group/input">
+                <input type="text" id="city" className="peer w-full bg-transparent border-b-2 border-outline-variant/20 py-4 font-body text-base text-on-surface outline-none focus:border-primary transition-all placeholder:text-transparent" placeholder="City" />
+                <label htmlFor="city" className="absolute left-0 top-1 text-[10px] font-bold text-primary/40 uppercase tracking-widest transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-1 peer-focus:text-[10px]">City / Hub</label>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="relative group/input">
+                   <input type="text" id="pin" className="peer w-full bg-transparent border-b-2 border-outline-variant/20 py-4 font-body text-base text-on-surface outline-none focus:border-primary transition-all placeholder:text-transparent" placeholder="Pin" />
+                   <label htmlFor="pin" className="absolute left-0 top-1 text-[10px] font-bold text-primary/40 uppercase tracking-widest transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-1 peer-focus:text-[10px]">Zip Code</label>
+                </div>
+                <div className="relative group/input">
+                   <input type="text" value="KA" disabled className="peer w-full bg-transparent border-b-2 border-outline-variant/10 py-4 font-body text-base text-on-surface/40 outline-none" />
+                   <label className="absolute left-0 top-1 text-[10px] font-bold text-primary/20 uppercase tracking-widest">State</label>
+                </div>
+              </div>
             </div>
           </section>
 
-          {/* Payment Method Section */}
-          <section className="bg-surface-container-low p-8 lg:p-10 rounded-lg">
-            <h2 className="font-headline text-2xl font-semibold text-on-surface mb-6 flex items-center tracking-tight">
-              <span className="material-symbols-outlined mr-3 text-primary" data-icon="payments">payments</span>
-              Payment Method
-            </h2>
-            <div className="space-y-4">
-              {/* UPI Option */}
-              <label className="block relative cursor-pointer group">
-                <input 
-                  checked={paymentMethod === "upi"} 
-                  onChange={() => setPaymentMethod("upi")}
-                  className="peer sr-only" 
-                  name="payment_method" 
-                  type="radio" 
-                  value="upi" 
-                />
-                <div className="w-full bg-surface-container-highest border-2 border-transparent peer-checked:border-primary peer-checked:bg-surface-bright rounded-lg p-5 flex items-center transition-all duration-200">
-                  <div className="w-6 h-6 rounded-full border-2 border-outline peer-checked:border-primary flex items-center justify-center mr-4 bg-surface">
-                    <div className="w-3 h-3 rounded-full bg-primary opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-headline font-semibold text-on-surface text-lg tracking-tight">UPI (GPay, PhonePe, Paytm)</h3>
-                    <p className="font-body text-sm text-on-surface-variant mt-1">Instant transfer using any UPI app.</p>
-                  </div>
-                  <span className="material-symbols-outlined text-primary text-3xl opacity-80" data-icon="qr_code_scanner">qr_code_scanner</span>
-                </div>
-              </label>
+          {/* Section: Payment Modalities */}
+          <section className="space-y-10">
+            <div className="flex items-center gap-6">
+              <span className="w-px h-12 bg-outline-variant opacity-20" />
+              <div className="space-y-1">
+                <h2 className="font-headline text-xl font-bold text-primary uppercase tracking-wider">II. Financial Protocol</h2>
+                <p className="text-xs text-on-surface-variant/60 font-medium">Select your preferred transaction layer for secure fiscal clearance.</p>
+              </div>
+            </div>
 
-              {/* Card Option */}
-              <label className="block relative cursor-pointer group">
-                <input 
-                  checked={paymentMethod === "card"} 
-                  onChange={() => setPaymentMethod("card")}
-                  className="peer sr-only" 
-                  name="payment_method" 
-                  type="radio" 
-                  value="card" 
-                />
-                <div className="w-full bg-surface-container-highest border-2 border-transparent peer-checked:border-primary peer-checked:bg-surface-bright rounded-lg p-5 flex items-center transition-all duration-200">
-                  <div className="w-6 h-6 rounded-full border-2 border-outline peer-checked:border-primary flex items-center justify-center mr-4 bg-surface">
-                    <div className="w-3 h-3 rounded-full bg-primary opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { id: "upi", label: "UPI Assets", desc: "Instant Digital Transfer", icon: "qr_code_scanner" },
+                { id: "card", label: "Fiscal Card", desc: "Visa / Mastercard Hub", icon: "credit_card" },
+                { id: "cod", label: "Field Liquidity", desc: "Physical Point Clearance", icon: "payments" }
+              ].map((opt) => (
+                <label key={opt.id} className="relative cursor-pointer group">
+                  <input 
+                    type="radio" 
+                    name="pay" 
+                    checked={paymentMethod === opt.id}
+                    onChange={() => setPaymentMethod(opt.id)}
+                    className="peer sr-only" 
+                  />
+                  <div className="h-full bg-surface-container-low/30 border border-outline-variant/10 rounded-2xl p-6 transition-all duration-300 peer-checked:bg-white peer-checked:border-primary/40 peer-checked:shadow-editorial hover:border-primary/20">
+                    <div className="w-10 h-10 rounded-xl bg-surface mb-6 flex items-center justify-center text-secondary border border-outline-variant/5 shadow-sm">
+                      <span className="material-symbols-outlined text-xl">{opt.icon}</span>
+                    </div>
+                    <h4 className="text-[11px] font-bold text-primary uppercase tracking-[0.2em] mb-1">{opt.label}</h4>
+                    <p className="text-[11px] font-medium text-on-surface-variant opacity-60 leading-tight">{opt.desc}</p>
+                    <div className="absolute top-6 right-6 w-4 h-4 rounded-full border-2 border-outline-variant/20 flex items-center justify-center peer-checked:bg-primary transition-all">
+                       <div className="w-1.5 h-1.5 bg-white rounded-full opacity-0 peer-checked:opacity-100" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-headline font-semibold text-on-surface text-lg tracking-tight">Credit / Debit Card</h3>
-                    <p className="font-body text-sm text-on-surface-variant mt-1">Visa, Mastercard, RuPay accepted.</p>
-                  </div>
-                  <span className="material-symbols-outlined text-primary text-3xl opacity-80" data-icon="credit_card">credit_card</span>
-                </div>
-              </label>
-
-              {/* COD Option */}
-              <label className="block relative cursor-pointer group">
-                <input 
-                  checked={paymentMethod === "cod"} 
-                  onChange={() => setPaymentMethod("cod")}
-                  className="peer sr-only" 
-                  name="payment_method" 
-                  type="radio" 
-                  value="cod" 
-                />
-                <div className="w-full bg-surface-container-highest border-2 border-transparent peer-checked:border-primary peer-checked:bg-surface-bright rounded-lg p-5 flex items-center transition-all duration-200">
-                  <div className="w-6 h-6 rounded-full border-2 border-outline peer-checked:border-primary flex items-center justify-center mr-4 bg-surface">
-                    <div className="w-3 h-3 rounded-full bg-primary opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-headline font-semibold text-on-surface text-lg tracking-tight">Cash on Delivery</h3>
-                    <p className="font-body text-sm text-on-surface-variant mt-1">Pay when your order arrives.</p>
-                  </div>
-                  <span className="material-symbols-outlined text-primary text-3xl opacity-80" data-icon="payments">payments</span>
-                </div>
-              </label>
+                </label>
+              ))}
             </div>
           </section>
         </div>
 
-        {/* Right Column: Order Summary Sidebar */}
-        <div className="lg:col-span-5 xl:col-span-4">
-          <div className="sticky top-28 space-y-6">
-            <div className="bg-surface-container-lowest p-8 rounded-lg shadow-[0_8px_40px_rgb(31,27,23,0.06)] border border-outline-variant/15">
-              <h2 className="font-headline text-2xl font-semibold text-on-surface mb-6 tracking-tight">Order Summary</h2>
-              {/* Order Items */}
-              <div className="space-y-6 mb-8">
+        {/* Right Column: Dynamic Subledger (Sticky) */}
+        <div className="lg:col-span-12 xl:col-span-4 lg:mt-16 xl:mt-0">
+          <div className="sticky top-32 space-y-10">
+            <section className="bg-surface-container-high/20 backdrop-blur-md rounded-3xl p-10 border border-outline-variant/10 relative overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
+              
+              <h3 className="text-[11px] font-bold text-primary uppercase tracking-[0.4em] mb-12 flex items-center gap-3">
+                <span className="w-4 h-px bg-secondary" />
+                Order Subledger
+              </h3>
+
+              <div className="space-y-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar mb-12">
                 {items.map((item) => (
-                  <div key={item.variantId} className="flex items-start">
-                    <div className="w-16 h-16 bg-surface-container rounded-lg overflow-hidden flex-shrink-0 relative">
+                  <div key={item.variantId} className="flex gap-4">
+                    <div className="w-16 h-16 bg-white rounded-xl overflow-hidden shadow-sm relative shrink-0 border border-outline-variant/5">
                       {item.imageUrl && (
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.imageAlt || item.title}
-                          fill
-                          className="object-cover"
-                        />
+                        <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
                       )}
                     </div>
-                    <div className="ml-4 flex-1">
-                      <h4 className="font-headline font-semibold text-on-surface text-base tracking-tight">{item.title}</h4>
-                      <p className="font-body text-sm text-on-surface-variant mt-1">Qty: {item.quantity}</p>
-                    </div>
-                    <div className="text-right ml-4">
-                      <span className="font-body font-medium text-on-surface">{formattedPrice(item.price * item.quantity)}</span>
+                    <div className="flex-1 space-y-1">
+                      <h5 className="text-[13px] font-bold text-on-surface leading-tight font-headline tracking-tight">{item.title}</h5>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-bold text-on-surface-variant/40 font-label tracking-widest">L-ORD-0{item.quantity}</span>
+                        <span className="text-[13px] font-medium text-on-surface">{formattedPrice(item.price * item.quantity)}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Totals */}
-              <div className="border-t border-outline-variant/15 pt-6 space-y-3">
-                <div className="flex justify-between font-body text-on-surface-variant">
-                  <span>Subtotal</span>
+              <div className="space-y-4 pt-8 border-t border-outline-variant/10">
+                <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+                  <span>Gross Value</span>
                   <span>{formattedPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between font-body text-on-surface-variant">
-                  <span>Shipping (Heavy Cargo)</span>
+                <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+                  <span>Logistics Tax (Heavy)</span>
                   <span>{formattedPrice(shippingPaise)}</span>
                 </div>
-                <div className="flex justify-between font-body text-on-surface-variant">
-                  <span>Taxes (GST 5%)</span>
+                <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+                  <span>Fiscal GST (5%)</span>
                   <span>{formattedPrice(gstPaise)}</span>
                 </div>
+                <div className="flex justify-between items-center pt-8 border-t border-outline-variant/10 mt-6">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Consolidated Net</span>
+                  <span className="text-3xl font-headline font-black text-primary tracking-tighter">{formattedPrice(totalPaise)}</span>
+                </div>
               </div>
-              <div className="border-t border-outline-variant/15 mt-6 pt-6 flex justify-between items-center mb-8">
-                <span className="font-headline font-bold text-xl text-on-surface tracking-tight">Total</span>
-                <span className="font-headline font-bold text-2xl text-primary tracking-tight">{formattedPrice(totalPaise)}</span>
-              </div>
+
               <button 
                 onClick={handlePlaceOrder}
                 disabled={isPlacingOrder}
-                className="w-full bg-primary text-on-primary font-headline font-semibold py-4 rounded-md hover:bg-primary-container hover:scale-[1.02] shadow-[0_4px_20px_rgb(31,27,23,0.06)] hover:shadow-[0_8px_40px_rgb(31,27,23,0.10)] transition-all duration-300 flex items-center justify-center active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full mt-10 bg-primary text-on-primary font-headline font-black uppercase tracking-[0.25em] text-[11px] py-6 rounded-2xl hover:bg-primary/95 transition-all shadow-editorial active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-4 group"
               >
                 {isPlacingOrder ? (
-                  <>
-                    <span className="material-symbols-outlined mr-2 animate-spin" data-icon="progress_activity">progress_activity</span>
-                    Processing...
-                  </>
+                  <motion.span 
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    className="material-symbols-outlined"
+                  >
+                    sync
+                  </motion.span>
                 ) : (
                   <>
-                    Place Order Securely
-                    <span className="material-symbols-outlined ml-2 text-xl" data-icon="lock">lock</span>
+                    Authorize Order
+                    <span className="material-symbols-outlined text-lg opacity-40 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                   </>
                 )}
               </button>
-            </div>
+            </section>
 
-            {/* Trust Indicators */}
-            <div className="bg-surface-container-low p-6 rounded-lg flex flex-col items-center justify-center text-center space-y-4">
-              <span className="material-symbols-outlined text-secondary text-3xl" data-icon="verified_user">verified_user</span>
-              <h4 className="font-headline font-semibold text-on-surface tracking-tight">Trusted Agrarian Supply</h4>
-              <p className="font-body text-sm text-on-surface-variant leading-relaxed">Your transaction is encrypted and securely processed. We guarantee the authenticity of all agricultural inputs.</p>
+            {/* Secure Clearance Footer */}
+            <div className="px-6 flex flex-col items-center text-center space-y-4">
+               <div className="flex items-center gap-4 text-secondary/40">
+                  <span className="material-symbols-outlined text-[20px]">encrypted</span>
+                  <span className="material-symbols-outlined text-[20px]">verified</span>
+                  <span className="material-symbols-outlined text-[20px]">account_balance</span>
+               </div>
+               <p className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-[0.25em] leading-relaxed">
+                  Basaveshwara Agro Kendra <br /> Secure Transaction Layer v1.0
+               </p>
             </div>
           </div>
         </div>
