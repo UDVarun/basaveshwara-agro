@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter, Space_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
@@ -84,7 +85,9 @@ export default async function RootLayout({
           - Navbar itself is a client component and reads useCart for the live badge
         */}
         <ClientProviders>
-          <NavigationProgressBar />
+          <Suspense fallback={null}>
+            <NavigationProgressBar />
+          </Suspense>
           <Navbar />
           <main id="main-content" className="flex-1">
             {children}
