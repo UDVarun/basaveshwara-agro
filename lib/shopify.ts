@@ -25,7 +25,7 @@ import { CUSTOMER_QUERY } from "@/lib/queries/customer";
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 function getShopifyConfig() {
-  const domain = process.env["SHOPIFY_STORE_DOMAIN"];
+  const domain = process.env["SHOPIFY_STORE_DOMAIN_URL"];
   const token = process.env["SHOPIFY_STOREFRONT_TOKEN"];
 
   if (!domain || !token) {
