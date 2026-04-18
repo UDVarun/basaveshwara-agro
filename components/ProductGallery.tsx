@@ -24,13 +24,19 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
     <div className="space-y-6">
       {/* Main Image */}
       <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-surface-container-low relative shadow-editorial">
-        <Image
-          src={activeImage.url}
-          alt={activeImage.altText ?? title}
-          fill
-          priority
-          className="object-cover transition-transform duration-700 hover:scale-105"
-        />
+        {activeImage ? (
+          <Image
+            src={activeImage.url}
+            alt={activeImage.altText ?? title}
+            fill
+            priority
+            className="object-cover transition-transform duration-700 hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-outline">
+            Image not available
+          </div>
+        )}
         {/* Badge Placeholder - Could be made dynamic */}
         <div className="absolute top-6 left-6 bg-secondary text-on-secondary text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-full">
           Verified Quality
@@ -45,7 +51,7 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
             onClick={() => setActiveImage(img)}
             className={[
               "aspect-square rounded-2xl overflow-hidden border-2 transition-all ring-offset-2 ring-offset-surface",
-              activeImage.url === img.url
+              activeImage?.url === img.url
                 ? "border-primary ring-2 ring-primary/20"
                 : "border-transparent opacity-70 hover:opacity-100 bg-surface-container-low"
             ].join(" ")}

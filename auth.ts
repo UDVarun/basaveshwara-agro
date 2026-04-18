@@ -35,9 +35,9 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.expiresAt = account.expires_at;
+        if (account.access_token) token.accessToken = account.access_token;
+        if (account.refresh_token) token.refreshToken = account.refresh_token;
+        if (account.expires_at) token.expiresAt = account.expires_at;
       }
       return token;
     },
@@ -53,7 +53,7 @@ export const authConfig: NextAuthConfig = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env["AUTH_SECRET"],
+  secret: process.env["AUTH_SECRET"] || "development-secret",
   basePath: "/api/auth",
   debug: true,
   trustHost: true,
