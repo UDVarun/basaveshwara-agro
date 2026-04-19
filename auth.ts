@@ -9,29 +9,46 @@ const providers = [
   }),
 ];
 
+// Debug log for Shopify configuration (server-side only)
+if (typeof window === "undefined") {
+  const shopId = process.env["SHOPIFY_SHOP_ID"];
+  const clientId = process.env["SHOPIFY_CLIENT_ID"];
+  const hasSecret = !!process.env["SHOPIFY_CLIENT_SECRET"];
+  
+  console.log("🔍 [auth] Shopify Config Check:", {
+    shopId: shopId || "MISSING",
+    clientId: clientId ? `${clientId.slice(0, 8)}...` : "MISSING",
+    hasSecret,
+    nodeEnv: process.env["NODE_ENV"],
+  });
+}
+
 if (process.env["SHOPIFY_SHOP_ID"]) {
   providers.push({
     id: "shopify",
     name: "Shopify",
+    issuer: `https://shopify.com/authentication/${(process.env["SHOPIFY_SHOP_ID"] || "").trim()}`,
+    clientId: (process.env["SHOPIFY_CLIENT_ID"] || "").trim(),
+    clientSecret: (process.env["SHOPIFY_CLIENT_SECRET"] || "").trim(),
     type: "oidc" as any,
-    issuer: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}`,
-    wellKnown: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}/.well-known/openid-configuration`,
-    clientId: process.env["SHOPIFY_CLIENT_ID"] || "",
-    clientSecret: process.env["SHOPIFY_CLIENT_SECRET"] || "",
     authorization: {
+      url: `https://shopify.com/authentication/${(process.env["SHOPIFY_SHOP_ID"] || "").trim()}/oauth/authorize`,
       params: {
-        scope: "openid email customer_account:full",
+        scope: "openid email customer-account-api:full",
       },
     },
+    token: `https://shopify.com/authentication/${(process.env["SHOPIFY_SHOP_ID"] || "").trim()}/oauth/token`,
+    jwks_endpoint: `https://shopify.com/authentication/${(process.env["SHOPIFY_SHOP_ID"] || "").trim()}/.well-known/jwks.json`,
     checks: ["pkce" as any, "state" as any],
     profile(profile: any) {
       return {
         id: profile.sub,
-        name: profile.name,
+        name: profile.name || profile.email?.split("@")[0],
         email: profile.email,
+        image: profile.picture,
       };
     },
-  } as any);
+  });
 }
 
 export const authConfig: any = {
