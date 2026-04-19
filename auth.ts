@@ -80,7 +80,7 @@ export const authConfig: any = {
   },
   secret: process.env["AUTH_SECRET"] || "development_secret_only_for_types",
   basePath: "/api/auth",
-  debug: process.env["NODE_ENV"] === "development",
+  debug: true, // Temporarily enabled to debug Vercel configuration error
   trustHost: true,
   cookies: {
     pkceCodeVerifier: {
