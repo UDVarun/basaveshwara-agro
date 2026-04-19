@@ -1,49 +1,57 @@
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
-
 import Google from "next-auth/providers/google";
 
-export const authConfig: NextAuthConfig = {
-  providers: [
-    Google({
-      clientId: process.env["GOOGLE_CLIENT_ID"] || "",
-      clientSecret: process.env["GOOGLE_CLIENT_SECRET"] || "",
-    }),
-    {
-      id: "shopify",
-      name: "Shopify",
-      type: "oidc",
-      issuer: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}`,
-      wellKnown: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}/.well-known/openid-configuration`,
-      clientId: process.env["SHOPIFY_CLIENT_ID"] || "",
-      clientSecret: process.env["SHOPIFY_CLIENT_SECRET"] || "",
-      authorization: {
-        params: {
-          scope: "openid email customer_account:full",
-        },
-      },
-      checks: ["pkce", "state"],
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-        };
+const providers = [
+  Google({
+    clientId: process.env["GOOGLE_CLIENT_ID"] || "",
+    clientSecret: process.env["GOOGLE_CLIENT_SECRET"] || "",
+  }),
+];
+
+if (process.env["SHOPIFY_SHOP_ID"]) {
+  providers.push({
+    id: "shopify",
+    name: "Shopify",
+    type: "oidc" as any,
+    issuer: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}`,
+    wellKnown: `https://shopify.com/${process.env["SHOPIFY_SHOP_ID"]}/.well-known/openid-configuration`,
+    clientId: process.env["SHOPIFY_CLIENT_ID"] || "",
+    clientSecret: process.env["SHOPIFY_CLIENT_SECRET"] || "",
+    authorization: {
+      params: {
+        scope: "openid email customer_account:full",
       },
     },
-  ],
+    checks: ["pkce" as any, "state" as any],
+    profile(profile: any) {
+      return {
+        id: profile.sub,
+        name: profile.name,
+        email: profile.email,
+      };
+    },
+  } as any);
+}
+
+export const authConfig: any = {
+  providers,
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account }: any) {
       if (account) {
-        if (account.access_token) token.accessToken = account.access_token;
-        if (account.refresh_token) token.refreshToken = account.refresh_token;
-        if (account.expires_at) token.expiresAt = account.expires_at;
+        token.provider = account.provider;
+        if (typeof account.access_token === "string") token.accessToken = account.access_token;
+        if (typeof account.refresh_token === "string") token.refreshToken = account.refresh_token;
+        if (typeof account.expires_at === "number") token.expiresAt = account.expires_at;
       }
       return token;
     },
-    async session({ session, token }) {
-      session.accessToken = token.accessToken as string;
-      session.refreshToken = token.refreshToken as string;
+    async session({ session, token }: any) {
+      if (session) {
+        session.provider = token.provider;
+        session.accessToken = token.accessToken;
+        session.refreshToken = token.refreshToken;
+      }
       return session;
     },
   },
@@ -53,17 +61,30 @@ export const authConfig: NextAuthConfig = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env["AUTH_SECRET"] || "development-secret",
+  secret: process.env["AUTH_SECRET"] || "development_secret_only_for_types",
   basePath: "/api/auth",
-  debug: true,
+  debug: process.env["NODE_ENV"] === "development",
   trustHost: true,
+  cookies: {
+    pkceCodeVerifier: {
+      name: "authjs.pkce.code_verifier",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env["NODE_ENV"] === "production",
+      },
+    },
+    state: {
+      name: "authjs.state",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env["NODE_ENV"] === "production",
+      },
+    },
+  },
 };
 
-// Log configuration status (server-side only)
-if (typeof window === "undefined") {
-  const shopId = process.env["SHOPIFY_SHOP_ID"];
-  if (!shopId) console.warn("⚠️ [auth] SHOPIFY_SHOP_ID is missing");
-  if (!process.env["AUTH_SECRET"]) console.warn("⚠️ [auth] AUTH_SECRET is missing");
-}
-
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig as any);

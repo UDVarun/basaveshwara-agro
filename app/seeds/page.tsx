@@ -36,8 +36,15 @@ interface ProductsData {
 }
 
 async function fetchSeedProducts(): Promise<ProductsData> {
-  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
-  // Filter for seeds specifically
+  const envBaseUrl = process.env["NEXT_PUBLIC_BASE_URL"];
+  const isLocalhost = !envBaseUrl || envBaseUrl.includes("localhost");
+  const vercelUrl = process.env["VERCEL_URL"];
+  
+  // Use Vercel URL if we are in production but the env var is misconfigured
+  const baseUrl = (isLocalhost && vercelUrl) 
+    ? `https://${vercelUrl}` 
+    : (envBaseUrl ?? "http://localhost:3000");
+
   const params = new URLSearchParams({ first: "48", q: "seed" });
 
   const res = await fetch(`${baseUrl}/api/v1/products?${params.toString()}`, {

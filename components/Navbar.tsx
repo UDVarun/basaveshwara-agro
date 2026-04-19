@@ -1,14 +1,20 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { useSession } from "next-auth/react";
+import UserMenu from "@/components/UserMenu";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { state, openCart } = useCart();
-  const { data: session } = useSession();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const cartCount = state.items.reduce((acc, item) => acc + item.quantity, 0);
 
   const navLinks = [
@@ -59,22 +65,14 @@ export default function Navbar() {
             className="text-primary hover:scale-[1.05] transition-transform duration-300 relative group"
           >
             <span className="material-symbols-outlined text-[24px]" data-icon="shopping_cart">shopping_cart</span>
-            {cartCount > 0 && (
+            {mounted && cartCount > 0 && (
               <span className="absolute -top-1 -right-2 bg-secondary text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-[1.5px] border-white">
                 {cartCount}
               </span>
             )}
           </button>
 
-          <Link 
-            href={session ? "/profile" : "/login"}
-            aria-label={session ? "Account" : "Login"} 
-            className="text-primary hover:scale-[1.05] transition-transform duration-300"
-          >
-            <span className="material-symbols-outlined text-[24px]" data-icon={session ? "account_circle" : "login"}>
-              {session ? "account_circle" : "login"}
-            </span>
-          </Link>
+          <UserMenu />
         </div>
       </div>
     </header>

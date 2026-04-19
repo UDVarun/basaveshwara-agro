@@ -185,7 +185,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
               </div>
               <h3 className="text-xl font-bold text-stone-900 mb-2">Check your email</h3>
               <p className="text-stone-500 mb-8 px-4">
-                We've sent a 6-digit security code to <br />
+                We&apos;ve sent a 6-digit security code to <br />
                 <span className="text-stone-800 font-semibold">{email}</span>
               </p>
 
@@ -211,7 +211,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
                   Change email address
                 </button>
                 <div className="text-stone-400 text-sm">
-                  Didn't receive a code?{" "}
+                  Didn&apos;t receive a code?{" "}
                   <button className="text-emerald-700 hover:text-emerald-800 font-bold ml-1">
                     Resend
                   </button>

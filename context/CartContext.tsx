@@ -25,6 +25,7 @@ export interface CartItem {
 export interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  isHydrated: boolean;
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -41,7 +42,8 @@ type CartAction =
     }
   | { type: "CLEAR_CART" }
   | { type: "OPEN_CART" }
-  | { type: "CLOSE_CART" };
+  | { type: "CLOSE_CART" }
+  | { type: "HYDRATE"; payload: CartItem[] };
 
 // ─── Quantity validator ───────────────────────────────────────────────────────
 // Must be a positive integer 1–99. Rejects zero, negative, non-integer.
@@ -54,6 +56,13 @@ function validQuantity(q: number): boolean {
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
+    case "HYDRATE":
+      return {
+        ...state,
+        items: action.payload,
+        isHydrated: true,
+      };
+
     case "ADD_ITEM": {
       const { quantity, ...itemData } = action.payload;
 
@@ -179,22 +188,28 @@ function loadCartFromStorage(): CartItem[] {
 const initialState: CartState = {
   items: [],
   isOpen: false,
+  isHydrated: false,
 };
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState, () => ({
-    ...initialState,
-    items: loadCartFromStorage(),
-  }));
+  const [state, dispatch] = useReducer(cartReducer, initialState);
 
-  // Sync cart items to localStorage on every change
+  // Initial load from localStorage
   useEffect(() => {
+    const items = loadCartFromStorage();
+    dispatch({ type: "HYDRATE", payload: items });
+  }, []);
+
+  // Sync cart items to localStorage on every change, but only after initial hydration
+  useEffect(() => {
+    if (!state.isHydrated) return;
+    
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
     } catch {
       // Quota exceeded or private browsing — silently ignore
     }
-  }, [state.items]);
+  }, [state.items, state.isHydrated]);
 
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity"> & { quantity: number }) => {

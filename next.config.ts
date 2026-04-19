@@ -6,7 +6,7 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https:;
-  connect-src 'self' https://*.myshopify.com;
+  connect-src 'self' https://*.myshopify.com https://*.google.com https://accounts.google.com;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self';

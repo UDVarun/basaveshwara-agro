@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 export default function ClientProviders({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider basePath="/api/auth">
       <CartProvider>
         {children}
         {/* CartDrawer lives here so it is always mounted and can read CartContext */}

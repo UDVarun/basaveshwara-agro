@@ -7,7 +7,7 @@ export const config = {
   // Combine matchers: rate limit API, and handle auth for pages
   matcher: [
     "/api/v1/:path*",
-    "/((?!api/|_next/static|_next/image|favicon.ico).*)"
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };
 

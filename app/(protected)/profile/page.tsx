@@ -11,9 +11,16 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const customer = await getCustomer(session.accessToken);
+  let customer = null;
+  if (session.provider === "shopify") {
+    try {
+      customer = await getCustomer(session.accessToken);
+    } catch (error) {
+      console.error("[ProfilePage] Shopify fetch error:", error);
+    }
+  }
 
-  if (!customer) {
+  if (session.provider === "shopify" && !customer) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
@@ -24,6 +31,13 @@ export default async function ProfilePage() {
     );
   }
 
+  const displayName = customer?.firstName 
+    ? `${customer.firstName} ${customer.lastName}`
+    : session.user?.name || "Member";
+    
+  const displayEmail = customer?.emailAddress?.email || session.user?.email;
+  const initial = (customer?.firstName?.[0] || session.user?.name?.[0] || displayEmail?.[0] || "?").toUpperCase();
+
   return (
     <div className="min-h-screen bg-stone-50 pb-20">
       {/* Header */}
@@ -31,15 +45,15 @@ export default async function ProfilePage() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-emerald-700 rounded-3xl flex items-center justify-center text-3xl font-bold border-4 border-emerald-800/50 shadow-2xl">
-              {customer.firstName?.[0] || customer.emailAddress?.email?.[0]?.toUpperCase()}
+              {initial}
             </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                {customer.firstName} {customer.lastName}
+                {displayName}
               </h1>
               <p className="text-emerald-100/80 font-medium flex items-center gap-2 mt-1">
                 <Mail className="w-4 h-4" />
-                {customer.emailAddress?.email}
+                {displayEmail}
               </p>
             </div>
           </div>
@@ -69,7 +83,7 @@ export default async function ProfilePage() {
               </h3>
             </div>
             
-            {customer.defaultAddress ? (
+            {customer?.defaultAddress ? (
               <div className="text-stone-600 space-y-1 font-medium italic">
                 <p>{customer.defaultAddress.address1}</p>
                 {customer.defaultAddress.address2 && <p>{customer.defaultAddress.address2}</p>}
@@ -77,7 +91,9 @@ export default async function ProfilePage() {
                 <p>{customer.defaultAddress.country}</p>
               </div>
             ) : (
-              <p className="text-stone-400 italic">No address on file</p>
+              <p className="text-stone-400 italic">
+                {session.provider === "shopify" ? "No address on file" : "Not available for social login"}
+              </p>
             )}
           </div>
 
@@ -100,7 +116,7 @@ export default async function ProfilePage() {
               Recent Orders
             </h3>
 
-            {customer.orders.edges.length > 0 ? (
+            {customer?.orders?.edges?.length > 0 ? (
               <div className="space-y-4">
                 {customer.orders.edges.map(({ node: order }: any) => (
                   <div key={order.id} className="group border border-stone-100 hover:border-emerald-200 hover:bg-emerald-50/30 rounded-2xl p-6 transition-all">
@@ -141,8 +157,14 @@ export default async function ProfilePage() {
                 <div className="bg-stone-50 w-20 h-20 rounded-full flex items-center justify-center mb-4">
                   <Package className="w-10 h-10 text-stone-200" />
                 </div>
-                <h4 className="text-stone-900 font-bold mb-1">No orders yet</h4>
-                <p className="text-stone-400 max-w-[200px]">Start shopping to see your harvest history here.</p>
+                <h4 className="text-stone-900 font-bold mb-1">
+                  {session.provider === "shopify" ? "No orders yet" : "Order tracking unavailable"}
+                </h4>
+                <p className="text-stone-400 max-w-[200px]">
+                  {session.provider === "shopify" 
+                    ? "Start shopping to see your harvest history here." 
+                    : "Please sign in with your main account to view order history."}
+                </p>
               </div>
             )}
           </div>
