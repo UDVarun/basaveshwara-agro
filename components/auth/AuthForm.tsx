@@ -2,7 +2,12 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  Loader2,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 
@@ -10,11 +15,27 @@ interface AuthFormProps {
   type?: "login" | "register";
 }
 
+const formCopy = {
+  login: {
+    submit: "Log In",
+    google: "Continue with Google",
+    footer:
+      "Secure access is handled through Shopify Customer Accounts and your connected providers.",
+  },
+  register: {
+    submit: "Sign Up",
+    google: "Register with Google",
+    footer:
+      "Your account is created through Shopify Customer Accounts for a smooth headless storefront experience.",
+  },
+} as const;
+
 export default function AuthForm({ type = "login" }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const copy = formCopy[type];
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +60,9 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
         // Or handle the redirect manually if needed.
       }, { login_hint: email });
 
-      setStep("otp");
+      // For the "New Customer Accounts" API, Auth.js will now redirect the user 
+      // directly to Shopify's managed login page where they can enter their code.
+      // The local "otp" step is bypassed in this standard OAuth/OIDC flow.
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -65,17 +88,29 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-stone-200">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-stone-900 tracking-tight mb-2">
-            {type === "login" ? "Welcome Back" : "Join the Community"}
-          </h2>
-          <p className="text-stone-500 font-medium">
-            {type === "login" 
-              ? "Manage your harvests and orders securely" 
-              : "Create an account to start your farming journey"}
-          </p>
+    <div className="w-full">
+      <div className="rounded-[8px] bg-white">
+        <div className="mb-6 grid grid-cols-2 rounded-[14px] bg-stone-100 p-1.5">
+          <Link
+            href="/login"
+            className={`rounded-[10px] px-4 py-3 text-center text-sm font-semibold transition-colors ${
+              type === "login"
+                ? "bg-white text-stone-950 shadow-sm"
+                : "text-stone-500 hover:text-stone-900"
+            }`}
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/register"
+            className={`rounded-[10px] px-4 py-3 text-center text-sm font-semibold transition-colors ${
+              type === "register"
+                ? "bg-white text-stone-950 shadow-sm"
+                : "text-stone-500 hover:text-stone-900"
+            }`}
+          >
+            Register
+          </Link>
         </div>
 
         <AnimatePresence mode="wait">
@@ -87,46 +122,31 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <form onSubmit={handleEmailSubmit} className="space-y-6">
+              <form onSubmit={handleEmailSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700 ml-1">
-                    Email Address
+                  <label className="ml-0.5 text-sm font-medium text-stone-900">
+                    Email
                   </label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 group-focus-within:text-emerald-600 transition-colors" />
+                    <Mail className="absolute top-1/2 left-0 h-5 w-5 -translate-y-1/2 text-stone-400 transition-colors group-focus-within:text-stone-900" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="farmer@example.com"
-                      className="w-full bg-stone-50 border border-stone-200 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-stone-900"
+                      placeholder="Enter your email"
+                      className="w-full border-0 border-b border-stone-300 bg-transparent py-3 pr-4 pl-8 text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-stone-950"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-emerald-800 hover:bg-emerald-900 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      {type === "login" ? "Sign In" : "Register"}
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-
-                <div className="relative py-4">
+                <div className="relative py-0.5">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-stone-200"></div>
+                    <div className="w-full border-t border-stone-200" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white/80 px-4 text-stone-400 font-bold tracking-widest backdrop-blur-sm">
-                      OR
+                    <span className="bg-white px-4 font-semibold tracking-[0.24em] text-stone-400">
+                      Or
                     </span>
                   </div>
                 </div>
@@ -134,7 +154,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full bg-white hover:bg-stone-50 text-stone-700 font-semibold py-4 rounded-2xl border border-stone-200 shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                  className="flex w-full items-center justify-center gap-3 rounded-full border border-stone-200 bg-white py-3 font-semibold text-stone-700 transition-all active:scale-[0.99] hover:border-stone-300 hover:bg-stone-50"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -155,20 +175,23 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
                     />
                     <path d="M1 1h22v22H1z" fill="none" />
                   </svg>
-                  Sign in with Google
+                  {copy.google}
                 </button>
 
-                <div className="text-center mt-6">
-                  <p className="text-stone-500 text-sm">
-                    {type === "login" ? "Don't have an account?" : "Already have an account?"}
-                    <Link 
-                      href={type === "login" ? "/register" : "/login"}
-                      className="text-emerald-700 hover:text-emerald-800 font-bold ml-1 transition-colors"
-                    >
-                      {type === "login" ? "Register now" : "Sign in here"}
-                    </Link>
-                  </p>
-                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="group flex w-full items-center justify-center gap-2 rounded-full bg-black py-3.5 font-semibold text-white transition-all active:scale-[0.99] hover:bg-stone-900 disabled:cursor-not-allowed disabled:bg-stone-300"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      {copy.submit}
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
               </form>
             </motion.div>
           ) : (
@@ -180,16 +203,18 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
               transition={{ duration: 0.3 }}
               className="text-center"
             >
-              <div className="bg-emerald-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-inner">
-                <ShieldCheck className="w-8 h-8" />
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-[8px] bg-emerald-50 text-emerald-700 shadow-inner">
+                <ShieldCheck className="h-8 w-8" />
               </div>
-              <h3 className="text-xl font-bold text-stone-900 mb-2">Check your email</h3>
-              <p className="text-stone-500 mb-8 px-4">
+              <h3 className="mb-2 text-2xl font-semibold tracking-[-0.03em] text-stone-950">
+                Check your email
+              </h3>
+              <p className="mb-8 px-4 text-sm leading-6 text-stone-600">
                 We&apos;ve sent a 6-digit security code to <br />
-                <span className="text-stone-800 font-semibold">{email}</span>
+                <span className="font-semibold text-stone-900">{email}</span>
               </p>
 
-              <div className="flex justify-between gap-2 mb-8">
+              <div className="mb-7 flex justify-between gap-2">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -198,7 +223,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
-                    className="w-12 h-14 bg-stone-50 border border-stone-200 rounded-xl text-center text-2xl font-bold text-stone-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                    className="h-12 w-10 rounded-[8px] border border-stone-200 bg-stone-50 text-center text-xl font-semibold text-stone-900 outline-none transition-all focus:border-emerald-700 focus:bg-white focus:ring-4 focus:ring-emerald-900/8 sm:h-14 sm:w-12 sm:text-2xl"
                   />
                 ))}
               </div>
@@ -206,13 +231,13 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
               <div className="space-y-4">
                 <button
                   onClick={() => setStep("email")}
-                  className="text-stone-500 hover:text-stone-800 text-sm font-semibold transition-colors"
+                  className="text-sm font-semibold text-stone-500 transition-colors hover:text-stone-800"
                 >
                   Change email address
                 </button>
-                <div className="text-stone-400 text-sm">
+                <div className="text-sm text-stone-400">
                   Didn&apos;t receive a code?{" "}
-                  <button className="text-emerald-700 hover:text-emerald-800 font-bold ml-1">
+                  <button className="ml-1 font-semibold text-emerald-700 hover:text-emerald-800">
                     Resend
                   </button>
                 </div>
@@ -220,12 +245,11 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
-      <p className="text-center mt-8 text-stone-400 text-sm font-medium px-4">
-        Securely authenticated by Shopify Customer Accounts. <br />
-        By continuing, you agree to our Terms of Service.
-      </p>
+        <div className="mt-5 border-t border-stone-200 pt-3">
+          <p className="text-sm leading-5 text-stone-500">{copy.footer}</p>
+        </div>
+      </div>
     </div>
   );
 }
