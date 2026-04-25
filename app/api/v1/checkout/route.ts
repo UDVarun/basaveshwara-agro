@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { shopifyFetch } from "@/lib/shopify";
-import { CHECKOUT_CREATE_MUTATION } from "@/lib/queries/cart";
+import { createCart } from "@/lib/shopify";
 import { checkoutLimiter } from "@/lib/ratelimit";
 import {
   checkRateLimit,
@@ -19,15 +18,6 @@ const CheckoutLineItem = z.object({
 const CheckoutSchema = z.object({
   lineItems: z.array(CheckoutLineItem).min(1).max(100),
 });
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface CheckoutResponse {
-  checkoutCreate: {
-    checkout: { id: string; webUrl: string } | null;
-    checkoutUserErrors: Array<{ field: string[] | null; message: string; code: string }>;
-  };
-}
 
 // ─── POST /api/v1/checkout ────────────────────────────────────────────────────
 
@@ -49,32 +39,34 @@ export async function POST(req: NextRequest) {
     return errorResponse(400, "Invalid checkout input.");
   }
 
-  // 3. Create checkout via Shopify — server-side only
+  // 3. Create cart via modern Shopify Cart API — server-side only
+  // (The old checkoutCreate mutation was deprecated by Shopify)
   try {
-    const data = await shopifyFetch<CheckoutResponse>(
-      CHECKOUT_CREATE_MUTATION,
-      { lineItems: parsed.data.lineItems }
-    );
+    const lines = parsed.data.lineItems.map((item) => ({
+      merchandiseId: item.variantId,
+      quantity: item.quantity,
+    }));
 
-    if (
-      data.checkoutCreate.checkoutUserErrors.length > 0 ||
-      !data.checkoutCreate.checkout
-    ) {
+    const { cart, userErrors } = await createCart(lines);
+
+    if (userErrors && userErrors.length > 0) {
       // Log errors server-side — never forward Shopify error messages to client
-      console.error(
-        "[checkout] Shopify user errors:",
-        data.checkoutCreate.checkoutUserErrors
-      );
+      console.error("[checkout] Shopify user errors:", userErrors);
       return errorResponse(
         422,
         "Checkout is temporarily unavailable. Please try again."
       );
     }
 
-    // Return ONLY the checkout URL — never expose the Shopify checkout ID or internals
-    return successResponse({
-      checkoutUrl: data.checkoutCreate.checkout.webUrl,
-    });
+    if (!cart?.checkoutUrl) {
+      return errorResponse(
+        500,
+        "Checkout is temporarily unavailable. Please try again."
+      );
+    }
+
+    // Return ONLY the checkout URL — never expose internal Shopify IDs
+    return successResponse({ checkoutUrl: cart.checkoutUrl });
   } catch {
     return errorResponse(500);
   }

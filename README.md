@@ -210,4 +210,4 @@ Set all environment variables in **Vercel Dashboard → Settings → Environment
 See `vercel.json` for build configuration.
 
 
-Emergency Bsckuop: git checkout all-good-auth-working
+Emergency Bsckuop: git checkout v2.0.0
