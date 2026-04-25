@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 
 export const config = {
   // Combine matchers: rate limit API, and handle auth for pages
@@ -35,9 +36,11 @@ function getLimiter(): Ratelimit | null {
   return _limiter;
 }
 
-// ─── Proxy (Next.js 16 replacement for middleware) ────────────────────────────
+// ─── Middleware (Next.js 15 standard) ──────────────────────────────────────────
 
-export async function proxy(req: NextRequest) {
+const { auth } = NextAuth(authConfig);
+
+export default auth(async function middleware(req: any) {
   const { pathname } = req.nextUrl;
 
   // 1. Rate Limiting for API routes
@@ -61,13 +64,13 @@ export async function proxy(req: NextRequest) {
         response.headers.set("X-RateLimit-Remaining", String(remaining));
         return response;
       } catch (err) {
-        console.error("[proxy] Rate limiter error:", err);
+        console.error("[middleware] Rate limiter error:", err);
       }
     }
   }
 
   // 2. Auth Protection for Pages
-  const session = await auth();
+  const session = req.auth;
   const protectedPaths = ["/profile", "/checkout"];
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
 
@@ -83,4 +86,4 @@ export async function proxy(req: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});

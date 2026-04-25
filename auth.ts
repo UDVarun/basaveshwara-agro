@@ -1,13 +1,28 @@
 import NextAuth from "next-auth";
+import Email from "next-auth/providers/email";
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 
-const providers = [
+const providers: any[] = [
   Google({
-    clientId: process.env["GOOGLE_CLIENT_ID"] || "",
-    clientSecret: process.env["GOOGLE_CLIENT_SECRET"] || "",
+    clientId: (process.env["GOOGLE_CLIENT_ID"] || "").trim(),
+    clientSecret: (process.env["GOOGLE_CLIENT_SECRET"] || "").trim(),
   }),
 ];
+
+if (process.env["EMAIL_SERVER"]) {
+  providers.push(
+    Email({
+      server: process.env["EMAIL_SERVER"],
+      from: process.env["EMAIL_FROM"],
+    })
+  );
+}
+
+// Debug logs moved to a shared check below.
+if (typeof window === "undefined") {
+  console.log("🔍 [auth] Google Client ID:", process.env["GOOGLE_CLIENT_ID"] ? `${process.env["GOOGLE_CLIENT_ID"].slice(0, 15)}...` : "MISSING");
+}
 
 // Debug log for Shopify configuration (server-side only)
 if (typeof window === "undefined") {
@@ -51,57 +66,17 @@ if (process.env["SHOPIFY_SHOP_ID"]) {
   });
 }
 
-export const authConfig: any = {
-  providers,
-  callbacks: {
-    async jwt({ token, account }: any) {
-      if (account) {
-        token.provider = account.provider;
-        if (typeof account.access_token === "string") token.accessToken = account.access_token;
-        if (typeof account.refresh_token === "string") token.refreshToken = account.refresh_token;
-        if (typeof account.expires_at === "number") token.expiresAt = account.expires_at;
-      }
-      return token;
-    },
-    async session({ session, token }: any) {
-      if (session) {
-        session.provider = token.provider;
-        session.accessToken = token.accessToken;
-        session.refreshToken = token.refreshToken;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
-  secret: process.env["AUTH_SECRET"] || "development_secret_only_for_types",
-  basePath: "/api/auth",
-  debug: true, // Temporarily enabled to debug Vercel configuration error
-  trustHost: true,
-  cookies: {
-    pkceCodeVerifier: {
-      name: "authjs.pkce.code_verifier",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env["NODE_ENV"] === "production",
-      },
-    },
-    state: {
-      name: "authjs.state",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env["NODE_ENV"] === "production",
-      },
-    },
-  },
-};
+import { authConfig } from "./auth.config";
+import { UpstashRedisAdapter } from "@auth/upstash-redis-adapter";
+import { Redis } from "@upstash/redis";
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig as any);
+const redis = new Redis({
+  url: process.env["UPSTASH_REDIS_REST_URL"] || "",
+  token: process.env["UPSTASH_REDIS_REST_TOKEN"] || "",
+});
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
+  adapter: UpstashRedisAdapter(redis),
+  providers,
+} as any);
