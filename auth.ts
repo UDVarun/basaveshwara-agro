@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Email from "next-auth/providers/email";
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
+import { createTransport } from "nodemailer";
 
 const providers: any[] = [
   Google({
@@ -9,8 +10,6 @@ const providers: any[] = [
     clientSecret: (process.env["GOOGLE_CLIENT_SECRET"] || "").trim(),
   }),
 ];
-
-import { createTransport } from "nodemailer";
 
 if (process.env["EMAIL_SERVER"]) {
   providers.push(

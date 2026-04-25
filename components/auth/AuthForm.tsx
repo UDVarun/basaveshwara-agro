@@ -51,11 +51,17 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       // Simulating a smooth transition to OTP state as requested
       await new Promise((resolve) => setTimeout(resolve, 800));
       
-      await signIn("email", { 
+      const result = await signIn("email", { 
         email,
         callbackUrl: "/profile",
-        redirect: true,
+        redirect: false,
       });
+
+      if (result?.error) {
+        console.error("Login email request failed:", result.error);
+        setIsLoading(false);
+        return;
+      }
 
       // Show the 'Check your email' UI step
       setStep("otp");
