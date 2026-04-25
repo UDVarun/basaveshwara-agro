@@ -40,34 +40,36 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Create cart via modern Shopify Cart API — server-side only
-  // (The old checkoutCreate mutation was deprecated by Shopify)
   try {
     const lines = parsed.data.lineItems.map((item) => ({
       merchandiseId: item.variantId,
       quantity: item.quantity,
     }));
 
+    console.log("[checkout] Creating Shopify cart, lines:", JSON.stringify(lines));
+
     const { cart, userErrors } = await createCart(lines);
 
+    console.log("[checkout] Cart result:", JSON.stringify({
+      cartId: cart?.id,
+      checkoutUrl: cart?.checkoutUrl,
+      userErrors,
+    }));
+
     if (userErrors && userErrors.length > 0) {
-      // Log errors server-side — never forward Shopify error messages to client
-      console.error("[checkout] Shopify user errors:", userErrors);
-      return errorResponse(
-        422,
-        "Checkout is temporarily unavailable. Please try again."
-      );
+      console.error("[checkout] Shopify userErrors:", userErrors);
+      return errorResponse(422, "Checkout is temporarily unavailable. Please try again.");
     }
 
     if (!cart?.checkoutUrl) {
-      return errorResponse(
-        500,
-        "Checkout is temporarily unavailable. Please try again."
-      );
+      console.error("[checkout] Shopify returned no checkoutUrl. Full cart:", JSON.stringify(cart));
+      return errorResponse(500, "Checkout is temporarily unavailable. Please try again.");
     }
 
     // Return ONLY the checkout URL — never expose internal Shopify IDs
     return successResponse({ checkoutUrl: cart.checkoutUrl });
-  } catch {
+  } catch (err) {
+    console.error("[checkout] Exception:", err);
     return errorResponse(500);
   }
 }
