@@ -10,11 +10,40 @@ const providers: any[] = [
   }),
 ];
 
+import { createTransport } from "nodemailer";
+
 if (process.env["EMAIL_SERVER"]) {
   providers.push(
     Email({
       server: process.env["EMAIL_SERVER"],
       from: process.env["EMAIL_FROM"] || "no-reply@basaveshwara-agro.com",
+      generateVerificationToken() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+      },
+      async sendVerificationRequest({ identifier, url, provider, token }) {
+        const { server, from } = provider;
+        // Strip out the password block explicitly if the connection string isn't standard formats
+        const transport = createTransport(server);
+        
+        await transport.sendMail({
+          to: identifier,
+          from: from,
+          subject: `Your Login Code: ${token}`,
+          text: `Your security code is: ${token}\n\nType this securely on the login page.`,
+          html: `
+            <div style="background-color:#f9f9f9;padding:40px 0;font-family:sans-serif">
+              <div style="background-color:white;max-width:500px;margin:0 auto;border-radius:12px;padding:30px;box-shadow:0 2px 8px rgba(0,0,0,0.05)">
+                <h1 style="font-size:24px;color:#333;margin-bottom:10px;text-align:center">Basaveshwara Agro</h1>
+                <p style="color:#555;font-size:16px;text-align:center">Use the following security code to securely sign in to your account.</p>
+                <div style="background-color:#f0fdf4;padding:20px;border-radius:8px;text-align:center;margin:30px 0">
+                  <span style="font-size:32px;font-weight:bold;letter-spacing:6px;color:#166534">${token}</span>
+                </div>
+                <p style="color:#888;font-size:14px;text-align:center;margin-top:20px">If you didn't request this email, you can safely ignore it.</p>
+              </div>
+            </div>
+          `,
+        });
+      },
     })
   );
 }

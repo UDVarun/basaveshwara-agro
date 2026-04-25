@@ -77,6 +77,14 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       nextInput?.focus();
     }
+
+    // Auto-verify when 6 digits are fully entered
+    const fullOtp = newOtp.join("");
+    if (fullOtp.length === 6 && !fullOtp.includes("")) {
+      setIsLoading(true);
+      // Construct the standard Auth.js callback verification URL
+      window.location.href = `/api/auth/callback/email?email=${encodeURIComponent(email)}&token=${fullOtp}&callbackUrl=/profile`;
+    }
   };
 
   const handleGoogleLogin = () => {
