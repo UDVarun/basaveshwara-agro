@@ -84,13 +84,13 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       nextInput?.focus();
     }
 
-    // Auto-verify when 6 digits are fully entered
-    const fullOtp = newOtp.join("");
-    if (fullOtp.length === 6 && !fullOtp.includes("")) {
-      setIsLoading(true);
-      // Construct the standard Auth.js callback verification URL
-      window.location.href = `/api/auth/callback/email?email=${encodeURIComponent(email)}&token=${fullOtp}&callbackUrl=/profile`;
-    }
+  };
+
+  const handleVerifyOtp = () => {
+    const fullOtp = otp.join("");
+    if (fullOtp.length !== 6 || fullOtp.includes("")) return;
+    setIsLoading(true);
+    window.location.href = `/api/auth/callback/email?email=${encodeURIComponent(email)}&token=${fullOtp}&callbackUrl=/profile`;
   };
 
   const handleGoogleLogin = () => {
@@ -240,14 +240,35 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
 
               <div className="space-y-4">
                 <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={isLoading || otp.join("").length !== 6}
+                  className="group flex w-full items-center justify-center gap-2 rounded-full bg-black py-3.5 font-semibold text-white transition-all active:scale-[0.99] hover:bg-stone-900 disabled:cursor-not-allowed disabled:bg-stone-300"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      Verify Code
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setStep("email")}
-                  className="text-sm font-semibold text-stone-500 transition-colors hover:text-stone-800"
+                  className="block w-full text-sm font-semibold text-stone-500 transition-colors hover:text-stone-800"
                 >
                   Change email address
                 </button>
                 <div className="text-sm text-stone-400">
                   Didn&apos;t receive a code?{" "}
-                  <button className="ml-1 font-semibold text-emerald-700 hover:text-emerald-800">
+                  <button
+                    type="button"
+                    onClick={handleEmailSubmit as any}
+                    className="ml-1 font-semibold text-emerald-700 hover:text-emerald-800"
+                  >
                     Resend
                   </button>
                 </div>
