@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import type { ShopifyProductVariant } from "@/types/shopify";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 interface ProductActionsProps {
   variants: ShopifyProductVariant[];
@@ -20,6 +21,7 @@ export default function ProductActions({
   sku
 }: ProductActionsProps) {
   const { addItem, openCart } = useCart();
+  const requireAuth = useAuthGuard();
   const [selectedVariant, setSelectedVariant] = useState(variants[0]);
   const [quantity, setQuantity] = useState(1);
 
@@ -31,6 +33,7 @@ export default function ProductActions({
   };
 
   const handleAddToCart = () => {
+    if (!requireAuth()) return;
     addItem({
       variantId: selectedVariant.id,
       title: productTitle,
@@ -45,7 +48,7 @@ export default function ProductActions({
   };
 
   const handleBuyNow = () => {
-    // In a real implementation, this would redirect directly to checkout
+    if (!requireAuth()) return;
     handleAddToCart();
   };
 

@@ -7,6 +7,7 @@ import { ShoppingCart, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 import type { ShopifyProduct, ShopifyProductVariant } from "@/types/shopify";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 interface HomeProductShowcaseProps {
   product?: ShopifyProduct;
@@ -27,6 +28,7 @@ export default function HomeProductShowcase({
   product,
 }: HomeProductShowcaseProps) {
   const { addItem, openCart } = useCart();
+  const requireAuth = useAuthGuard();
   const variants = product?.variants.nodes ?? [];
   const [selectedVariantId, setSelectedVariantId] = useState(
     variants[0]?.id ?? ""
@@ -57,6 +59,7 @@ export default function HomeProductShowcase({
   }
 
   function handleAddToCart() {
+    if (!requireAuth()) return;
     if (!product || !selectedVariant || !isAvailable) return;
 
     const priceNum = Number.parseFloat(selectedVariant.price.amount);

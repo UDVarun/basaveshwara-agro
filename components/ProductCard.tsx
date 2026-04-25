@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 import type { ShopifyProduct } from "@/types/shopify";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -13,6 +14,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { handle, title, featuredImage, priceRange, variants, availableForSale, vendor, description } = product;
   const { addItem, openCart } = useCart();
+  const requireAuth = useAuthGuard();
   
   const minPrice = priceRange.minVariantPrice;
   const firstVariant = variants.nodes[0];
@@ -20,7 +22,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    
+    if (!requireAuth()) return;
     if (!firstVariant || !availableForSale) return;
 
     addItem({

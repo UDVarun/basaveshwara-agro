@@ -3,6 +3,7 @@
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 interface AddToCartButtonProps {
   variantId: string;
@@ -26,8 +27,10 @@ export default function AddToCartButton({
   handle,
 }: AddToCartButtonProps) {
   const { addItem, openCart } = useCart();
+  const requireAuth = useAuthGuard();
 
   function handleAddToCart() {
+    if (!requireAuth()) return;
     const item: Omit<CartItem, "quantity"> & { quantity: number } = {
       variantId,
       title: productTitle,
