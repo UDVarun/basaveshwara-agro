@@ -51,18 +51,14 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       // Simulating a smooth transition to OTP state as requested
       await new Promise((resolve) => setTimeout(resolve, 800));
       
-      // Initiate Shopify Sign-in
-      // We use login_hint to pre-fill the email on Shopify's side
-      await signIn("shopify", { 
+      await signIn("email", { 
+        email,
         callbackUrl: "/profile",
         redirect: true,
-        // We'll pass the email as a hint if the provider configuration allows it
-        // Or handle the redirect manually if needed.
-      }, { login_hint: email });
+      });
 
-      // For the "New Customer Accounts" API, Auth.js will now redirect the user 
-      // directly to Shopify's managed login page where they can enter their code.
-      // The local "otp" step is bypassed in this standard OAuth/OIDC flow.
+      // Show the 'Check your email' UI step
+      setStep("otp");
     } catch (error) {
       console.error("Login error:", error);
     } finally {
