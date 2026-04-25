@@ -16,13 +16,42 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [sameAsShipping, setSameAsShipping] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
   const router = useRouter();
 
   const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
-    // Simulate luxury processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    router.push("/checkout/success");
+    setCheckoutError("");
+
+    try {
+      // Build the item list for the server — keep Shopify token server-side
+      const checkoutItems = items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+      }));
+
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: checkoutItems }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.checkoutUrl) {
+        setCheckoutError(
+          data.error || "Something went wrong. Please try again."
+        );
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      // Redirect to Shopify's secure checkout page
+      window.location.href = data.checkoutUrl;
+    } catch {
+      setCheckoutError("Network error. Please check your connection.");
+      setIsPlacingOrder(false);
+    }
   };
 
   const formattedPrice = (priceInPaise: number) =>
@@ -228,19 +257,30 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Error message */}
+              {checkoutError && (
+                <div className="mt-6 flex items-start gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+                  <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
+                  {checkoutError}
+                </div>
+              )}
+
               <button 
                 onClick={handlePlaceOrder}
                 disabled={isPlacingOrder}
-                className="w-full mt-10 bg-primary text-on-primary font-headline font-black uppercase tracking-[0.25em] text-[11px] py-6 rounded-2xl hover:bg-primary/95 transition-all shadow-editorial active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-4 group"
+                className="w-full mt-6 bg-primary text-on-primary font-headline font-black uppercase tracking-[0.25em] text-[11px] py-6 rounded-2xl hover:bg-primary/95 transition-all shadow-editorial active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-4 group"
               >
                 {isPlacingOrder ? (
-                  <motion.span 
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    className="material-symbols-outlined"
-                  >
-                    sync
-                  </motion.span>
+                  <>
+                    <motion.span 
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                      className="material-symbols-outlined"
+                    >
+                      sync
+                    </motion.span>
+                    Redirecting to Shopify...
+                  </>
                 ) : (
                   <>
                     Authorize Order

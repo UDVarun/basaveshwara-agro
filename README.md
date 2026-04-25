@@ -208,3 +208,6 @@ vercel deploy --prod
 
 Set all environment variables in **Vercel Dashboard → Settings → Environment Variables**.
 See `vercel.json` for build configuration.
+
+
+Emergency Bsckuop: git checkout all-good-auth-working
