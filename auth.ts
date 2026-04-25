@@ -28,7 +28,7 @@ const providers: any[] = [
     credentials: {
       email: { label: "Email", type: "email" },
     },
-    async authorize(credentials) {
+    async authorize(credentials, _request) {
       const email = ((credentials?.email as string) || "").toLowerCase().trim();
       if (!email) return null;
 
@@ -43,9 +43,9 @@ const providers: any[] = [
       return {
         id: email,
         email,
-        name: email.split("@")[0],
+        name: email.split("@")[0] ?? null,
         image: null,
-      };
+      } as any;
     },
   }),
 ];

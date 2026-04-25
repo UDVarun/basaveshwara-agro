@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     if (userErrors && userErrors.length > 0) {
       console.error("[checkout] Shopify userErrors:", userErrors);
       return NextResponse.json(
-        { error: userErrors[0].message || "Failed to create cart." },
+        { error: userErrors[0]?.message || "Failed to create cart." },
         { status: 422 }
       );
     }
