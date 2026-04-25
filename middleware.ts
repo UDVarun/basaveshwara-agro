@@ -80,9 +80,9 @@ export default auth(async function middleware(req: any) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect logged-in users away from login page
-  if (pathname === "/login" && session) {
-    return NextResponse.redirect(new URL("/profile", req.url));
+  // Redirect logged-in users away from login/register pages → home
+  if ((pathname === "/login" || pathname === "/register") && session) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();

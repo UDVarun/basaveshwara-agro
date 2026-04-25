@@ -122,7 +122,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       const result = await signIn("email-otp", {
         email,
         redirect: false,
-        callbackUrl: "/profile",
+        callbackUrl: "/",
       });
 
       if (result?.error) {
@@ -132,7 +132,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       }
 
       // 3. Redirect to profile on success
-      window.location.href = result?.url || "/profile";
+      window.location.href = result?.url || "/";
     } catch {
       setError("Something went wrong. Please try again.");
       setIsLoading(false);
@@ -140,7 +140,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
   };
 
   const handleGoogleLogin = () => {
-    signIn("google", { callbackUrl: "/profile" });
+    signIn("google", { callbackUrl: "/" });
   };
 
   return (
