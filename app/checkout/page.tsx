@@ -1,330 +1,277 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 import { 
   ShieldCheck, 
-  ChevronLeft, 
   Lock, 
-  CreditCard, 
-  Smartphone, 
-  Truck, 
-  MapPin, 
-  ChevronRight,
-  AlertCircle,
-  Loader2
+  Loader2,
+  Check,
+  Package,
+  QrCode,
+  CreditCard,
+  Banknote,
+  Verified,
+  Library,
+  Sprout,
+  Egg,
+  Truck
 } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const { state, subtotal } = useCart();
   const { items, isHydrated } = state;
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Form states
-  const [email, setEmail] = useState("");
-  const [shippingMethod, setShippingMethod] = useState("standard");
   const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [isBillingSame, setIsBillingSame] = useState(true);
 
-  const total = subtotal;
+  // Financial calculations
+  const shippingCharge = 850; // Mock: $8.50 scaled for ₹
+  const taxCharge = 420; // Mock: $4.20 scaled for ₹
+  const totalCharge = subtotal + shippingCharge + taxCharge;
 
   const handlePlaceOrder = async () => {
-    try {
-      setIsPlacingOrder(true);
-      setError(null);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-
-      const checkoutItems = items.map((item) => ({
-        variantId: item.variantId,
-        quantity: item.quantity,
-      }));
-
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: checkoutItems }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Checkout is temporarily unavailable. Please try again.");
-      }
-
-      const { checkoutUrl } = await res.json();
-      
-      if (!checkoutUrl) {
-        throw new Error("Invalid response from checkout gateway.");
-      }
-
-      // Final redirect to Shopify
-      window.location.href = checkoutUrl;
-    } catch (err: any) {
-      console.error("Checkout process error:", err);
-      
-      let errorMessage = "An unexpected error occurred. Please try again.";
-      if (err.name === 'AbortError') {
-        errorMessage = "Operation timed out. Your connection might be unstable.";
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      setIsPlacingOrder(false);
-    }
+    setIsPlacingOrder(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    router.push("/checkout/success");
   };
 
-  if (!isHydrated) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-agro-green opacity-20" />
-      </div>
-    );
-  }
+  if (!isHydrated) return null;
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-md"
-        >
-          <div className="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center mb-6 mx-auto">
-            <Lock className="w-6 h-6 text-agro-muted opacity-40" />
-          </div>
-          <h1 className="text-3xl font-headline font-semibold text-agro-ink mb-3 tracking-tight">Empty Manifest</h1>
-          <p className="text-agro-muted mb-8 font-body leading-relaxed">You haven't selected any agricultural inputs for procurement yet.</p>
-          <Link 
-            href="/products"
-            className="inline-flex items-center justify-center px-8 py-4 bg-primary text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-agro-ink transition-colors rounded-sm"
-          >
-            Browse Collections
+      <div className="min-h-screen bg-[#fff8f5] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md">
+          <h1 className="text-4xl font-headline font-bold text-[#004534] mb-4">Your basket is empty</h1>
+          <p className="text-[#3f4944] mb-8 font-body opacity-70">Begin your agricultural journey by selecting our premium inputs.</p>
+          <Link href="/products" className="inline-block bg-[#004534] text-white px-12 py-5 rounded-lg font-headline font-bold uppercase tracking-widest hover:bg-[#1e5d4a] transition-all">
+            Return to Fields
           </Link>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-surface text-agro-ink font-body selection:bg-primary/10">
-      {/* Header */}
-      <header className="bg-surface-container-lowest py-8 px-6 lg:px-12 flex items-center justify-between relative z-50">
-        <Link href="/" className="flex items-center gap-4 group">
-          <ChevronLeft className="w-4 h-4 text-agro-muted group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">Abort Procurement</span>
-        </Link>
-        
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-agro-green" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-agro-green">Secure Channel Active</span>
+    <div className="min-h-screen bg-[#fff8f5] text-[#1f1b17] font-body selection:bg-[#95d3ba] selection:text-[#002117] antialiased">
+      {/* Header: Identity Anchor */}
+      <header className="bg-[#fff8f5] border-b border-[#f0e6e0]">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-12 py-8">
+          <Link href="/" className="text-2xl font-headline font-black text-[#004534] uppercase tracking-widest">
+            MODERN AGRARIAN
+          </Link>
+          <div className="flex items-center gap-4 text-[#3f4944] font-medium">
+            <Lock className="w-5 h-5 opacity-40" />
+            <span className="text-sm tracking-widest uppercase font-bold opacity-60">Secure Checkout</span>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
-        
-        {/* Left Column: Form Tiers */}
-        <div className="lg:col-span-7 p-6 lg:p-12 lg:pr-24 space-y-20 border-r border-outline-variant/10">
+      <main className="max-w-7xl mx-auto px-12 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           
-          <section>
-            <div className="mb-12">
-              <span className="text-[10px] font-bold text-primary tracking-[0.4em] uppercase block mb-4">Protocol 01</span>
-              <h1 className="text-5xl lg:text-7xl font-headline font-semibold tracking-tighter leading-[0.9] text-agro-ink">
-                Secure Procurement<br/>& Order Finalization.
-              </h1>
-            </div>
-
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="mb-10 p-5 bg-error_container text-agro-ink rounded-sm flex items-start gap-4 border-l-4 border-error"
-              >
-                <AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider mb-1">Authorization Error</p>
-                  <p className="text-[13px] opacity-80 leading-relaxed">{error}</p>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="space-y-12">
-              {/* Email Section */}
-              <div className="space-y-6">
-                <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">
-                  <span className="w-6 h-px bg-agro-outline-ghost/30" />
-                  Point of Contact
-                </label>
-                <div className="relative group">
-                  <input 
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="official.email@agrarian.com"
-                    className="w-full bg-surface-container-high px-6 py-6 text-lg font-headline font-medium tracking-tight placeholder:text-agro-muted/30 focus:outline-none border-b-2 border-transparent focus:border-primary transition-all rounded-sm"
-                  />
-                  <p className="mt-3 text-[10px] text-agro-muted/50 font-medium">Manifest updates will be sent to this channel.</p>
-                </div>
+          {/* Primary Form Section */}
+          <div className="lg:col-span-7 space-y-24">
+            
+            {/* Step 01: Shipping Information */}
+            <section id="shipping-info">
+              <div className="mb-12">
+                <span className="text-[#904d00] font-bold tracking-widest text-[10px] uppercase mb-2 block">Step 01</span>
+                <h2 className="text-4xl font-headline font-bold tracking-tight text-[#004534]">Shipping Information</h2>
               </div>
-
-              {/* Logistics Section */}
-              <div className="space-y-8 pt-12 border-t border-outline-variant/10">
-                <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">
-                  <span className="w-6 h-px bg-agro-outline-ghost/30" />
-                  Logistics & Destination
-                </label>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <button 
-                    onClick={() => setShippingMethod("standard")}
-                    className={`flex flex-col items-start p-6 rounded-sm transition-all text-left ${shippingMethod === "standard" ? "bg-surface-container-high ring-1 ring-primary/20" : "bg-surface-container-low hover:bg-surface-container-high"}`}
-                   >
-                     <Truck className={`w-5 h-5 mb-4 ${shippingMethod === "standard" ? "text-primary" : "text-agro-muted opacity-30"}`} />
-                     <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-agro-ink">Field Delivery</p>
-                     <p className="text-[13px] text-agro-muted opacity-60">Standard institutional logistics (5-7 days).</p>
-                   </button>
-
-                   <button 
-                    onClick={() => setShippingMethod("express")}
-                    className={`flex flex-col items-start p-6 rounded-sm transition-all text-left ${shippingMethod === "express" ? "bg-surface-container-high ring-1 ring-primary/20" : "bg-surface-container-low hover:bg-surface-container-high"}`}
-                   >
-                     <MapPin className={`w-5 h-5 mb-4 ${shippingMethod === "express" ? "text-primary" : "text-agro-muted opacity-30"}`} />
-                     <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-agro-ink">Priority Deployment</p>
-                     <p className="text-[13px] text-agro-muted opacity-60">Accelerated land transit (2-3 days).</p>
-                   </button>
-                </div>
-              </div>
-
-              {/* Payment Protocol */}
-              <div className="space-y-8 pt-12 border-t border-outline-variant/10">
-                <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">
-                  <span className="w-6 h-px bg-agro-outline-ghost/30" />
-                  Financial Protocol
-                </label>
-
-                <div className="space-y-3">
-                  {[
-                    { id: "upi", label: "Field Liquidity (UPI)", desc: "Instant digital settlement via mobile portal.", icon: Smartphone },
-                    { id: "card", label: "Fiscal Card (Credit/Debit)", desc: "Formal bank authorization via encrypted gateway.", icon: CreditCard },
-                    { id: "cod", label: "Physical Settlement (COD)", desc: "Authorized cash tender upon physical delivery.", icon: Truck },
-                  ].map((method) => (
-                    <button
-                      key={method.id}
-                      onClick={() => setPaymentMethod(method.id)}
-                      className={`w-full flex items-center justify-between p-6 rounded-sm transition-all group ${paymentMethod === method.id ? "bg-surface-container-high ring-1 ring-primary/20" : "bg-surface-container-low hover:bg-surface-container-high"}`}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                {[
+                  { id: "fname", label: "First Name", placeholder: "Farmer" },
+                  { id: "lname", label: "Last Name", placeholder: "Gowda" },
+                  { id: "address", label: "Street Address", placeholder: "123 Agrarian Way", full: true },
+                  { id: "city", label: "City / District", placeholder: "Hubballi" },
+                  { id: "pincode", label: "Pincode", placeholder: "580020" },
+                  { id: "phone", label: "Phone Number", placeholder: "+91 98765 43210", full: true },
+                ].map((field) => (
+                  <div key={field.id} className={`relative ${field.full ? "md:col-span-2" : ""}`}>
+                    <input 
+                      type="text" 
+                      id={field.id}
+                      placeholder=" "
+                      className="block w-full px-0 py-4 bg-transparent border-0 border-b-2 border-[#bec9c2] focus:border-[#004534] focus:ring-0 transition-all peer font-medium"
+                    />
+                    <label 
+                      htmlFor={field.id}
+                      className="absolute left-0 top-4 text-[#6f7973] pointer-events-none transition-all duration-200 origin-left peer-focus:-translate-y-6 peer-focus:scale-[0.85] peer-focus:text-[#004534] peer-[:not(:placeholder-shown)]:-translate-y-6 peer-[:not(:placeholder-shown)]:scale-[0.85]"
                     >
-                      <div className="flex items-start gap-4">
-                        <div className={`mt-1 ${paymentMethod === method.id ? "text-primary" : "text-agro-muted opacity-30"}`}>
-                          <method.icon className="w-5 h-5" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-agro-ink">{method.label}</p>
-                          <p className="text-[12px] text-agro-muted opacity-60 leading-relaxed">{method.desc}</p>
+                      {field.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-12 flex items-center gap-4 group cursor-pointer" onClick={() => setIsBillingSame(!isBillingSame)}>
+                <div className={`relative w-12 h-6 rounded-full transition-colors ${isBillingSame ? "bg-[#004534]" : "bg-[#f0e6e0]"}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${isBillingSame ? "translate-x-7" : "translate-x-1"}`} />
+                </div>
+                <label className="text-[#3f4944] font-medium text-sm cursor-pointer select-none">Billing address is same as shipping</label>
+              </div>
+            </section>
+
+            {/* Step 02: Payment Method */}
+            <section className="pt-12" id="payment-methods">
+              <div className="mb-12">
+                <span className="text-[#904d00] font-bold tracking-widest text-[10px] uppercase mb-2 block">Step 02</span>
+                <h2 className="text-4xl font-headline font-bold tracking-tight text-[#004534]">Payment Method</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6">
+                {[
+                  { id: "upi", label: "UPI Transfer", desc: "Google Pay, PhonePe, or BHIM", icon: QrCode },
+                  { id: "card", label: "Credit or Debit Card", desc: "Secure checkout with Visa, Master, or Amex", icon: CreditCard },
+                  { id: "cod", label: "Cash on Delivery", desc: "Pay when you receive your harvest", icon: Banknote },
+                ].map((method) => (
+                  <label key={method.id} className="relative block group cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      checked={paymentMethod === method.id}
+                      onChange={() => setPaymentMethod(method.id)}
+                      className="sr-only peer"
+                    />
+                    <div className="flex items-center justify-between p-8 rounded-xl bg-[#fcf2eb] transition-all duration-300 peer-checked:bg-[#1e5d4a] peer-checked:ring-2 peer-checked:ring-[#004534] ring-inset">
+                      <div className="flex items-center gap-6">
+                        <method.icon className={`w-8 h-8 ${paymentMethod === method.id ? "text-[#95d4bb]" : "text-[#004534]"}`} />
+                        <div>
+                          <p className={`font-headline font-bold text-lg ${paymentMethod === method.id ? "text-white" : "text-[#1f1b17]"}`}>{method.label}</p>
+                          <p className={`text-sm ${paymentMethod === method.id ? "text-white/70" : "text-[#3f4944]"}`}>{method.desc}</p>
                         </div>
                       </div>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${paymentMethod === method.id ? "border-primary" : "border-outline-variant opacity-30"}`}>
-                        {paymentMethod === method.id && <div className="w-2 h-2 bg-primary rounded-full" />}
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${paymentMethod === method.id ? "border-white" : "border-[#004534]"}`}>
+                        {paymentMethod === method.id && <div className="w-3 h-3 bg-white rounded-full" />}
                       </div>
-                    </button>
-                  ))}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <div className="pt-12">
+              <button 
+                onClick={handlePlaceOrder}
+                disabled={isPlacingOrder}
+                className="w-full py-8 bg-[#004534] text-white font-headline font-bold text-xl uppercase tracking-widest rounded-lg hover:bg-[#1e5d4a] transition-all transform hover:scale-[1.01] active:scale-[0.99] shadow-lg flex items-center justify-center gap-4 disabled:opacity-50"
+              >
+                {isPlacingOrder ? <Loader2 className="w-6 h-6 animate-spin" /> : "Complete Order"}
+              </button>
+              <p className="text-center mt-6 text-[#3f4944] text-sm flex items-center justify-center gap-2">
+                <ShieldCheck className="w-4 h-4 opacity-40" />
+                <span>Your transaction is encrypted and secure</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Sidebar: Order Summary */}
+          <aside className="lg:col-span-5 sticky top-16">
+            <div className="bg-[#fcf2eb] p-10 rounded-[2.5rem] shadow-sm">
+              <h3 className="text-2xl font-headline font-bold text-[#004534] mb-10">Order Summary</h3>
+              
+              <div className="space-y-8 mb-10 max-h-[400px] overflow-y-auto custom-scrollbar pr-4">
+                {items.map((item) => (
+                  <div key={item.variantId} className="flex gap-6 group">
+                    <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-white p-2">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover rounded-lg" />
+                      ) : (
+                        <div className="w-full h-full bg-[#f6ece6] flex items-center justify-center rounded-lg">
+                          <Package className="w-8 h-8 text-[#004534] opacity-20" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <h4 className="font-headline font-bold text-[#1f1b17] group-hover:text-[#004534] transition-colors line-clamp-1">{item.title}</h4>
+                      <p className="text-xs text-[#3f4944] mb-2 uppercase tracking-widest font-semibold opacity-60">Qty: {item.quantity} • Institutional</p>
+                      <p className="font-bold text-[#004534]">{formatPrice(item.price * item.quantity)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-5 pt-10 border-t border-[#bec9c2]/30">
+                <div className="flex justify-between items-center text-[#3f4944] font-medium">
+                  <span>Subtotal</span>
+                  <span>{formatPrice(subtotal)}</span>
+                </div>
+                <div className="flex justify-between items-center text-[#3f4944] font-medium">
+                  <span>Sustainable Shipping</span>
+                  <span>{formatPrice(shippingCharge)}</span>
+                </div>
+                <div className="flex justify-between items-center text-[#3f4944] font-medium">
+                  <span>Agricultural Tax</span>
+                  <span>{formatPrice(taxCharge)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-8 text-3xl font-headline font-black text-[#004534] tracking-tighter">
+                  <span>Total</span>
+                  <span>{formatPrice(totalCharge)}</span>
+                </div>
+              </div>
+
+              <div className="mt-12 p-8 bg-white/50 rounded-2xl border border-[#bec9c2]/20">
+                <div className="flex gap-4 items-start">
+                  <Library className="w-6 h-6 text-[#904d00] shrink-0 mt-1" />
+                  <div>
+                    <p className="text-[10px] font-bold text-[#904d00] uppercase tracking-widest mb-1.5">Modern Agrarian Promise</p>
+                    <p className="text-[11px] text-[#3f4944] leading-relaxed font-medium opacity-80">
+                      Every purchase supports regenerative soil practices and fair-trade small farm collectives. Rooted in tradition, grown for the future.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </section>
+          </aside>
         </div>
-
-        {/* Right Column: Ledger Summary */}
-        <aside className="lg:col-span-5 bg-surface-container-low p-6 lg:p-12 self-start sticky top-0 h-auto lg:h-screen flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-12">
-              <span className="text-[10px] font-bold text-agro-muted tracking-[0.4em] uppercase">Manifest Ledger</span>
-              <span className="text-[10px] font-bold text-primary tracking-widest uppercase">[{items.length}] Units</span>
-            </div>
-
-            <div className="space-y-8 mb-16 max-h-[40vh] overflow-y-auto pr-4 custom-scrollbar">
-              {items.map((item) => (
-                <div key={item.variantId} className="flex gap-6 group">
-                  <div className="w-20 h-20 bg-surface-container-lowest shrink-0 relative overflow-hidden rounded-sm">
-                    {item.imageUrl ? (
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.imageAlt ?? item.title} 
-                        className="w-full h-full object-cover mix-blend-multiply opacity-80"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[8px] font-bold uppercase tracking-widest text-agro-muted opacity-20">No Vis</div>
-                    )}
-                  </div>
-                  <div className="flex-1 py-1">
-                    <h4 className="text-[13px] font-headline font-semibold text-agro-ink mb-1 group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
-                    <p className="text-[10px] text-agro-muted font-bold tracking-widest uppercase mb-2">QTY: {item.quantity}</p>
-                    <p className="text-[13px] font-headline text-primary font-semibold">{formatPrice(item.price.toString(), item.currencyCode)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-6 pt-12 border-t border-agro-outline-ghost/10">
-              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-agro-muted">
-                <span>Sub-Total Ledger</span>
-                <span>{formatPrice(subtotal.toString(), items[0]?.currencyCode)}</span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-agro-muted opacity-50">
-                <span>Institutional Tax</span>
-                <span>Calculated at Portal</span>
-              </div>
-              <div className="flex items-center justify-between text-2xl font-headline font-bold text-agro-ink pt-6 border-t border-agro-outline-ghost/30">
-                <span>TOTAL</span>
-                <span className="text-primary tracking-tighter">{formatPrice(subtotal.toString(), items[0]?.currencyCode)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-20">
-            <button
-              onClick={handlePlaceOrder}
-              disabled={isPlacingOrder}
-              className="w-full h-20 bg-primary text-white text-[12px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-agro-ink transition-all active:scale-[0.98] disabled:bg-agro-ink/20 disabled:cursor-not-allowed group relative overflow-hidden shadow-2xl shadow-primary/20"
-            >
-              <AnimatePresence mode="wait">
-                {isPlacingOrder ? (
-                  <motion.div 
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-3"
-                  >
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Initializing Secure Gateway...</span>
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    key="idle"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-3"
-                  >
-                    <Lock className="w-4 h-4 opacity-50" />
-                    <span>Execute Procurement Acquisition</span>
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
-            <p className="text-[9px] text-center mt-6 text-agro-muted/40 uppercase font-bold tracking-[0.3em]">Institutional Grade Encrypted Channel</p>
-          </div>
-        </aside>
       </main>
+
+      {/* Hallmark Footer */}
+      <footer className="bg-[#fcf2eb] rounded-t-[3rem] mt-24">
+        <div className="max-w-7xl mx-auto py-24 px-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
+          <div className="space-y-6">
+            <div className="font-headline font-black text-[#004534] text-xl uppercase tracking-widest">Modern Agrarian</div>
+            <p className="text-stone-500 text-sm leading-relaxed">
+              Cultivating excellence through modern architectural agricultural design and sustainable sourcing.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <span className="font-bold text-[#004534] uppercase tracking-widest text-xs">Explore</span>
+            <Link href="/sustainability" className="text-stone-500 hover:text-[#004534] transition-all text-sm">Sustainability</Link>
+            <Link href="/shipping" className="text-stone-500 hover:text-[#004534] transition-all text-sm">Shipping & Returns</Link>
+          </div>
+          <div className="flex flex-col gap-4">
+            <span className="font-bold text-[#004534] uppercase tracking-widest text-xs">Company</span>
+            <Link href="/privacy" className="text-stone-500 hover:text-[#004534] transition-all text-sm">Privacy</Link>
+            <Link href="/journal" className="text-stone-500 hover:text-[#004534] transition-all text-sm">Journal</Link>
+          </div>
+          <div className="space-y-6">
+            <span className="font-bold text-[#004534] uppercase tracking-widest text-xs">Heritage</span>
+            <p className="text-stone-500 text-sm">© 2024 Modern Agrarian. Cultivating Excellence.</p>
+            <div className="flex gap-4">
+              <Sprout className="w-5 h-5 text-[#004534] cursor-pointer hover:scale-110 transition-transform" />
+              <Egg className="w-5 h-5 text-[#004534] cursor-pointer hover:scale-110 transition-transform" />
+              <div className="w-5 h-5 text-[#004534] cursor-pointer hover:scale-110 transition-transform flex items-center justify-center">
+                <Truck className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #bec9c2; border-radius: 10px; }
+      `}</style>
     </div>
   );
 }
