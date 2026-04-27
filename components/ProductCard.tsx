@@ -20,7 +20,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   
   const minPrice = priceRange.minVariantPrice;
   const firstVariant = variants.nodes[0];
-  const priceValue = parseFloat(minPrice.amount);
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
@@ -48,7 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }}
-      className="group bg-surface-container-lowest overflow-hidden hover:scale-[1.01] transition-all duration-500 relative shadow-none hover:shadow-[0_12px_30px_-10px_rgba(31,27,23,0.07)] flex flex-col h-full border border-outline-variant/10 rounded-lg"
+      className="group bg-surface-container-lowest overflow-hidden transition-all duration-500 relative shadow-none hover:shadow-[0_12px_30px_-10px_rgba(31,27,23,0.07)] flex flex-col h-full rounded-lg"
     >
       {/* Clickable Overlay Link */}
       <Link 
@@ -57,7 +56,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         aria-label={`View details for ${title}`}
       />
 
-      {/* Image Container - Even smaller h-42 for ultra-sleek look */}
+      {/* Image Container */}
       <div className="h-42 bg-surface-container-low relative overflow-hidden rounded-t-lg pointer-events-none">
         {featuredImage ? (
           <Image 
@@ -80,7 +79,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
       </div>
 
-      {/* Content Area - 16px padding */}
+      {/* Content Area */}
       <div className="p-4 flex-1 flex flex-col justify-between bg-surface-container-lowest relative z-10 pointer-events-none">
         <div className="mb-3">
           <p className="text-[9px] font-bold text-agro-muted tracking-wider uppercase mb-1 font-body opacity-70">
@@ -110,7 +109,5 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
     </motion.div>
-  );
-}
   );
 }

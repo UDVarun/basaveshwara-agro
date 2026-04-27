@@ -1,40 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { formatPrice } from "@/lib/format";
 import { 
-  Loader2, 
   ShieldCheck, 
-  ArrowRight, 
+  ChevronLeft, 
   Lock, 
-  Truck, 
-  FileText, 
   CreditCard, 
   Smartphone, 
-  Banknote,
-  ShoppingBag,
-  Package,
-  MapPin,
-  ChevronRight
+  Truck, 
+  MapPin, 
+  ChevronRight,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
-import { formatPricePaise } from "@/lib/format";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CheckoutPage() {
-  const { state, subtotal, clearCart } = useCart();
-  const items = state.items;
+  const { state, subtotal } = useCart();
+  const { items, isHydrated } = state;
 
-  const [paymentMethod, setPaymentMethod] = useState("upi");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [checkoutError, setCheckoutError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Form states
+  const [email, setEmail] = useState("");
+  const [shippingMethod, setShippingMethod] = useState("standard");
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+
+  const total = subtotal;
 
   const handlePlaceOrder = async () => {
-    setIsPlacingOrder(true);
-    setCheckoutError("");
-
     try {
+      setIsPlacingOrder(true);
+      setError(null);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
       const checkoutItems = items.map((item) => ({
         variantId: item.variantId,
         quantity: item.quantity,
@@ -44,265 +49,282 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: checkoutItems }),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
+      clearTimeout(timeoutId);
 
-      if (!res.ok || !data.checkoutUrl) {
-        setCheckoutError(data.error || "The secure vault connection failed. Please re-authenticate.");
-        setIsPlacingOrder(false);
-        return;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Checkout is temporarily unavailable. Please try again.");
       }
 
-      clearCart();
-      window.location.href = data.checkoutUrl;
-    } catch {
-      setCheckoutError("Logistics connection error. Please verify your transmission.");
+      const { checkoutUrl } = await res.json();
+      
+      if (!checkoutUrl) {
+        throw new Error("Invalid response from checkout gateway.");
+      }
+
+      // Final redirect to Shopify
+      window.location.href = checkoutUrl;
+    } catch (err: any) {
+      console.error("Checkout process error:", err);
+      
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (err.name === 'AbortError') {
+        errorMessage = "Operation timed out. Your connection might be unstable.";
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setIsPlacingOrder(false);
     }
   };
 
-  const shippingPaise = 35000; // ₹350.00
-  const gstPaise = subtotal * 0.05;
-  const totalPaise = subtotal + shippingPaise + gstPaise;
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-agro-green opacity-20" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
-      <main className="max-w-3xl mx-auto px-6 py-40 flex flex-col items-center justify-center min-h-[70vh]">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative mb-8"
+          className="max-w-md"
         >
-           <div className="absolute inset-0 bg-agro-green/10 rounded-full blur-3xl" />
-           <ShoppingBag className="w-16 h-16 text-agro-muted relative z-10" />
+          <div className="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center mb-6 mx-auto">
+            <Lock className="w-6 h-6 text-agro-muted opacity-40" />
+          </div>
+          <h1 className="text-3xl font-headline font-semibold text-agro-ink mb-3 tracking-tight">Empty Manifest</h1>
+          <p className="text-agro-muted mb-8 font-body leading-relaxed">You haven't selected any agricultural inputs for procurement yet.</p>
+          <Link 
+            href="/products"
+            className="inline-flex items-center justify-center px-8 py-4 bg-primary text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-agro-ink transition-colors rounded-sm"
+          >
+            Browse Collections
+          </Link>
         </motion.div>
-        <h1 className="text-4xl font-headline font-semibold text-agro-ink mb-4">Provision Vault Empty</h1>
-        <p className="text-agro-muted mb-10 text-center max-w-md italic">
-          Your acquisition session is currently inactive. Please populate your curation to proceed.
-        </p>
-        <Link 
-          href="/products" 
-          className="bg-agro-green text-white font-bold text-[11px] uppercase tracking-[0.3em] px-10 py-5 rounded-xl hover:bg-agro-ink transition-all shadow-xl shadow-agro-green/10 flex items-center gap-4"
-        >
-          Access Inventory
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-6 md:px-12 pt-40 pb-24">
-      {/* Cinematic Loading Overlay */}
-      <AnimatePresence>
-        {isPlacingOrder && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-agro-bg/80 backdrop-blur-md"
-          >
-            <div className="text-center space-y-8">
-              <div className="relative inline-block">
-                <Loader2 className="w-16 h-16 text-agro-green animate-spin opacity-20" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ShieldCheck className="w-8 h-8 text-agro-green animate-pulse" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-headline font-bold text-agro-ink italic uppercase tracking-[0.3em]">Vault Authorization</h2>
-                <p className="text-[10px] font-bold text-agro-muted uppercase tracking-widest">Bridging secure connection to Shopify Gateway...</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 px-2">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-agro-green text-[10px] font-bold uppercase tracking-[0.4em]">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Secure Acquisition Protocol
-          </div>
-          <h1 className="text-5xl md:text-7xl font-headline font-semibold tracking-tighter text-agro-ink">Checkout</h1>
+    <div className="min-h-screen bg-surface text-agro-ink font-body selection:bg-primary/10">
+      {/* Header */}
+      <header className="bg-surface-container-lowest py-8 px-6 lg:px-12 flex items-center justify-between relative z-50">
+        <Link href="/" className="flex items-center gap-4 group">
+          <ChevronLeft className="w-4 h-4 text-agro-muted group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">Abort Procurement</span>
+        </Link>
+        
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-agro-green" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-agro-green">Secure Channel Active</span>
         </div>
-        <div className="flex items-center gap-4 text-agro-muted text-xs font-medium bg-agro-surface-low px-6 py-4 rounded-2xl border border-agro-outline-ghost/30">
-          <span>Cart</span>
-          <ChevronRight className="w-4 h-4 opacity-30" />
-          <span className="text-agro-green font-bold uppercase tracking-wider">Acquisition</span>
-          <ChevronRight className="w-4 h-4 opacity-30" />
-          <span>Harvest</span>
-        </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-        {/* Left Column: Forms */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-16">
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
+        
+        {/* Left Column: Form Tiers */}
+        <div className="lg:col-span-7 p-6 lg:p-12 lg:pr-24 space-y-20 border-r border-outline-variant/10">
           
-          {/* Shipping Address Section */}
-          <section className="bg-agro-surface-low/30 p-8 lg:p-12 rounded-3xl border border-agro-outline-ghost/20 shadow-editorial">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="w-12 h-12 bg-agro-green/5 rounded-2xl flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-agro-green" />
-              </div>
-              <h2 className="text-2xl font-headline font-semibold text-agro-ink uppercase tracking-tight">Delivery Logistics</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-agro-muted uppercase tracking-widest px-1">First Name</label>
-                <input className="w-full bg-white border border-agro-outline-ghost/30 rounded-xl px-4 py-4 text-agro-ink focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 transition-all placeholder:text-agro-muted/30" placeholder="Kishore" type="text" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-agro-muted uppercase tracking-widest px-1">Last Name</label>
-                <input className="w-full bg-white border border-agro-outline-ghost/30 rounded-xl px-4 py-4 text-agro-ink focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 transition-all placeholder:text-agro-muted/30" placeholder="Gowda" type="text" />
-              </div>
+          <section>
+            <div className="mb-12">
+              <span className="text-[10px] font-bold text-primary tracking-[0.4em] uppercase block mb-4">Protocol 01</span>
+              <h1 className="text-5xl lg:text-7xl font-headline font-semibold tracking-tighter leading-[0.9] text-agro-ink">
+                Secure Procurement<br/>& Order Finalization.
+              </h1>
             </div>
 
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-agro-muted uppercase tracking-widest px-1">Institutional Address</label>
-                <input className="w-full bg-white border border-agro-outline-ghost/30 rounded-xl px-4 py-4 text-agro-ink focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 transition-all placeholder:text-agro-muted/30" placeholder="Basaveshwara Farm, K.M. Road" type="text" />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold text-agro-muted uppercase tracking-widest px-1">City / District</label>
-                  <input className="w-full bg-white border border-agro-outline-ghost/30 rounded-xl px-4 py-4 text-agro-ink focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 transition-all placeholder:text-agro-muted/30" placeholder="Chikkamagaluru" type="text" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-agro-muted uppercase tracking-widest px-1">Pincode</label>
-                  <input className="w-full bg-white border border-agro-outline-ghost/30 rounded-xl px-4 py-4 text-agro-ink focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 transition-all placeholder:text-agro-muted/30" placeholder="577101" type="text" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-agro-muted uppercase tracking-widest px-1">Verified Contact</label>
-                <input className="w-full bg-white border border-agro-outline-ghost/30 rounded-xl px-4 py-4 text-agro-ink focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 transition-all placeholder:text-agro-muted/30" placeholder="+91 948XXXXXXX" type="tel" />
-              </div>
-            </div>
-          </section>
-
-          {/* Payment Method Section */}
-          <section className="bg-agro-surface-low/30 p-8 lg:p-12 rounded-3xl border border-agro-outline-ghost/20 shadow-editorial">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="w-12 h-12 bg-agro-green/5 rounded-2xl flex items-center justify-center">
-                <CreditCard className="w-6 h-6 text-agro-green" />
-              </div>
-              <h2 className="text-2xl font-headline font-semibold text-agro-ink uppercase tracking-tight">Acquisition Method</h2>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { id: "upi", label: "Unified Payments Interface", desc: "Premium instant settlement via GPay/PhonePe.", icon: Smartphone },
-                { id: "card", label: "Corporate Credit/Debit", desc: "Secured encrypted card processing.", icon: CreditCard },
-                { id: "cod", label: "Settlement on Delivery", desc: "Pay upon physical verification of quality.", icon: Banknote }
-              ].map((opt) => (
-                <label key={opt.id} className="block relative cursor-pointer group">
-                  <input 
-                    type="radio" 
-                    name="payment_method" 
-                    value={opt.id}
-                    checked={paymentMethod === opt.id}
-                    onChange={() => setPaymentMethod(opt.id)}
-                    className="peer sr-only" 
-                  />
-                  <div className="w-full bg-white border border-agro-outline-ghost/30 peer-checked:border-agro-green peer-checked:shadow-lg peer-checked:shadow-agro-green/5 rounded-2xl p-6 flex items-center gap-6 transition-all duration-300">
-                    <div className="w-6 h-6 rounded-full border-2 border-agro-outline-ghost/30 peer-checked:border-agro-green flex items-center justify-center bg-white transition-colors group-hover:border-agro-green/50">
-                      <div className={`w-2.5 h-2.5 rounded-full bg-agro-green transition-all ${paymentMethod === opt.id ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}></div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-headline font-semibold text-agro-ink leading-tight">{opt.label}</h3>
-                      <p className="text-[10px] font-bold text-agro-muted uppercase tracking-wider mt-1">{opt.desc}</p>
-                    </div>
-                    <opt.icon className="w-8 h-8 text-agro-green/40 group-hover:text-agro-green/80 transition-colors" />
-                  </div>
-                </label>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* Right Column: Order Summary Sidebar */}
-        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-40">
-          <div className="bg-agro-ink text-white p-8 lg:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-            {/* Texture background */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-            
-            <h2 className="text-xs font-bold uppercase tracking-[0.4em] text-agro-muted mb-10 pb-4 border-b border-white/10 relative z-10">Provision Manifest</h2>
-            
-            {/* Order Items */}
-            <div className="space-y-8 mb-10 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar relative z-10">
-              {items.map((item) => (
-                <div key={item.variantId} className="flex gap-4">
-                  <div className="w-16 h-16 bg-white/5 rounded-xl overflow-hidden shrink-0 relative border border-white/5">
-                    {item.imageUrl && (
-                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover opacity-80" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-headline font-semibold truncate leading-tight">{item.title}</h4>
-                    <p className="text-[9px] font-bold text-agro-muted uppercase tracking-widest mt-1">Batch ID #VLT-{item.variantId.slice(-4).toUpperCase()} &bull; Qty: {item.quantity}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold tracking-tight">{formatPricePaise(item.price * item.quantity)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Totals */}
-            <div className="space-y-4 mb-10 border-t border-white/10 pt-8 relative z-10">
-              <div className="flex justify-between text-xs text-agro-muted">
-                <span className="font-bold uppercase tracking-widest">Sub-Provision</span>
-                <span className="text-white font-bold">{formatPricePaise(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-xs text-agro-muted">
-                <span className="font-bold uppercase tracking-widest">Heavy Logistics</span>
-                <span className="text-white font-bold">{formatPricePaise(shippingPaise)}</span>
-              </div>
-              <div className="flex justify-between text-xs text-agro-muted">
-                <span className="font-bold uppercase tracking-widest">Statutory GST (5%)</span>
-                <span className="text-white font-bold">{formatPricePaise(gstPaise)}</span>
-              </div>
-            </div>
-
-            <div className="pt-8 mb-10 border-t-2 border-white/10 flex justify-between items-end relative z-10">
-              <span className="text-sm font-headline font-bold uppercase tracking-tighter text-white/60">Vault Total</span>
-              <span className="text-4xl font-headline font-bold text-agro-green tracking-tighter">{formatPricePaise(totalPaise)}</span>
-            </div>
-
-            {checkoutError && (
+            {error && (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-8 p-4 bg-red-500/10 border border-red-500/20 text-red-200 text-[10px] font-bold uppercase tracking-widest rounded-xl text-center relative z-10"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="mb-10 p-5 bg-error_container text-agro-ink rounded-sm flex items-start gap-4 border-l-4 border-error"
               >
-                 {checkoutError}
+                <AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-1">Authorization Error</p>
+                  <p className="text-[13px] opacity-80 leading-relaxed">{error}</p>
+                </div>
               </motion.div>
             )}
 
-            <button 
-              onClick={handlePlaceOrder}
-              disabled={isPlacingOrder}
-              className="group relative w-full h-16 bg-agro-green text-white font-bold text-[11px] uppercase tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 hover:bg-white hover:text-agro-ink transition-all shadow-2xl shadow-agro-green/20 disabled:opacity-50 relative z-10 overflow-hidden"
-            >
-              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-              <Lock className="w-4 h-4" />
-              <span>{isPlacingOrder ? "Authorizing..." : "Execute Acquisition"}</span>
-            </button>
+            <div className="space-y-12">
+              {/* Email Section */}
+              <div className="space-y-6">
+                <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">
+                  <span className="w-6 h-px bg-agro-outline-ghost/30" />
+                  Point of Contact
+                </label>
+                <div className="relative group">
+                  <input 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="official.email@agrarian.com"
+                    className="w-full bg-surface-container-high px-6 py-6 text-lg font-headline font-medium tracking-tight placeholder:text-agro-muted/30 focus:outline-none border-b-2 border-transparent focus:border-primary transition-all rounded-sm"
+                  />
+                  <p className="mt-3 text-[10px] text-agro-muted/50 font-medium">Manifest updates will be sent to this channel.</p>
+                </div>
+              </div>
 
-            {/* Reassurance */}
-            <div className="mt-10 flex flex-col items-center gap-4 text-center opacity-40 relative z-10">
-               <ShieldCheck className="w-10 h-10 text-white" />
-               <p className="text-[9px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-[200px]">
-                  Basel III Compliant Encryption &bull; Heritage Seed Guarantee
-               </p>
+              {/* Logistics Section */}
+              <div className="space-y-8 pt-12 border-t border-outline-variant/10">
+                <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">
+                  <span className="w-6 h-px bg-agro-outline-ghost/30" />
+                  Logistics & Destination
+                </label>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <button 
+                    onClick={() => setShippingMethod("standard")}
+                    className={`flex flex-col items-start p-6 rounded-sm transition-all text-left ${shippingMethod === "standard" ? "bg-surface-container-high ring-1 ring-primary/20" : "bg-surface-container-low hover:bg-surface-container-high"}`}
+                   >
+                     <Truck className={`w-5 h-5 mb-4 ${shippingMethod === "standard" ? "text-primary" : "text-agro-muted opacity-30"}`} />
+                     <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-agro-ink">Field Delivery</p>
+                     <p className="text-[13px] text-agro-muted opacity-60">Standard institutional logistics (5-7 days).</p>
+                   </button>
+
+                   <button 
+                    onClick={() => setShippingMethod("express")}
+                    className={`flex flex-col items-start p-6 rounded-sm transition-all text-left ${shippingMethod === "express" ? "bg-surface-container-high ring-1 ring-primary/20" : "bg-surface-container-low hover:bg-surface-container-high"}`}
+                   >
+                     <MapPin className={`w-5 h-5 mb-4 ${shippingMethod === "express" ? "text-primary" : "text-agro-muted opacity-30"}`} />
+                     <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-agro-ink">Priority Deployment</p>
+                     <p className="text-[13px] text-agro-muted opacity-60">Accelerated land transit (2-3 days).</p>
+                   </button>
+                </div>
+              </div>
+
+              {/* Payment Protocol */}
+              <div className="space-y-8 pt-12 border-t border-outline-variant/10">
+                <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-agro-muted">
+                  <span className="w-6 h-px bg-agro-outline-ghost/30" />
+                  Financial Protocol
+                </label>
+
+                <div className="space-y-3">
+                  {[
+                    { id: "upi", label: "Field Liquidity (UPI)", desc: "Instant digital settlement via mobile portal.", icon: Smartphone },
+                    { id: "card", label: "Fiscal Card (Credit/Debit)", desc: "Formal bank authorization via encrypted gateway.", icon: CreditCard },
+                    { id: "cod", label: "Physical Settlement (COD)", desc: "Authorized cash tender upon physical delivery.", icon: Truck },
+                  ].map((method) => (
+                    <button
+                      key={method.id}
+                      onClick={() => setPaymentMethod(method.id)}
+                      className={`w-full flex items-center justify-between p-6 rounded-sm transition-all group ${paymentMethod === method.id ? "bg-surface-container-high ring-1 ring-primary/20" : "bg-surface-container-low hover:bg-surface-container-high"}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`mt-1 ${paymentMethod === method.id ? "text-primary" : "text-agro-muted opacity-30"}`}>
+                          <method.icon className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-agro-ink">{method.label}</p>
+                          <p className="text-[12px] text-agro-muted opacity-60 leading-relaxed">{method.desc}</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${paymentMethod === method.id ? "border-primary" : "border-outline-variant opacity-30"}`}>
+                        {paymentMethod === method.id && <div className="w-2 h-2 bg-primary rounded-full" />}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column: Ledger Summary */}
+        <aside className="lg:col-span-5 bg-surface-container-low p-6 lg:p-12 self-start sticky top-0 h-auto lg:h-screen flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-12">
+              <span className="text-[10px] font-bold text-agro-muted tracking-[0.4em] uppercase">Manifest Ledger</span>
+              <span className="text-[10px] font-bold text-primary tracking-widest uppercase">[{items.length}] Units</span>
+            </div>
+
+            <div className="space-y-8 mb-16 max-h-[40vh] overflow-y-auto pr-4 custom-scrollbar">
+              {items.map((item) => (
+                <div key={item.variantId} className="flex gap-6 group">
+                  <div className="w-20 h-20 bg-surface-container-lowest shrink-0 relative overflow-hidden rounded-sm">
+                    {item.imageUrl ? (
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.imageAlt ?? item.title} 
+                        className="w-full h-full object-cover mix-blend-multiply opacity-80"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[8px] font-bold uppercase tracking-widest text-agro-muted opacity-20">No Vis</div>
+                    )}
+                  </div>
+                  <div className="flex-1 py-1">
+                    <h4 className="text-[13px] font-headline font-semibold text-agro-ink mb-1 group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
+                    <p className="text-[10px] text-agro-muted font-bold tracking-widest uppercase mb-2">QTY: {item.quantity}</p>
+                    <p className="text-[13px] font-headline text-primary font-semibold">{formatPrice(item.price.toString(), item.currencyCode)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-6 pt-12 border-t border-agro-outline-ghost/10">
+              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-agro-muted">
+                <span>Sub-Total Ledger</span>
+                <span>{formatPrice(subtotal.toString(), items[0]?.currencyCode)}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-agro-muted opacity-50">
+                <span>Institutional Tax</span>
+                <span>Calculated at Portal</span>
+              </div>
+              <div className="flex items-center justify-between text-2xl font-headline font-bold text-agro-ink pt-6 border-t border-agro-outline-ghost/30">
+                <span>TOTAL</span>
+                <span className="text-primary tracking-tighter">{formatPrice(subtotal.toString(), items[0]?.currencyCode)}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </main>
+
+          <div className="mt-20">
+            <button
+              onClick={handlePlaceOrder}
+              disabled={isPlacingOrder}
+              className="w-full h-20 bg-primary text-white text-[12px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-agro-ink transition-all active:scale-[0.98] disabled:bg-agro-ink/20 disabled:cursor-not-allowed group relative overflow-hidden shadow-2xl shadow-primary/20"
+            >
+              <AnimatePresence mode="wait">
+                {isPlacingOrder ? (
+                  <motion.div 
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-3"
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Initializing Secure Gateway...</span>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-3"
+                  >
+                    <Lock className="w-4 h-4 opacity-50" />
+                    <span>Execute Procurement Acquisition</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+            <p className="text-[9px] text-center mt-6 text-agro-muted/40 uppercase font-bold tracking-[0.3em]">Institutional Grade Encrypted Channel</p>
+          </div>
+        </aside>
+      </main>
+    </div>
   );
 }

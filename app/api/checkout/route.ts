@@ -1,77 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCart } from "@/lib/shopify";
 
-export interface CheckoutRequestItem {
-  variantId: string; // Shopify Global ID  e.g. "gid://shopify/ProductVariant/12345"
-  quantity: number;
-}
-
-/**
- * POST /api/checkout
- *
- * Accepts the client-side cart, creates a real Shopify Cart via the
- * Storefront API (server-side — token never exposed to browser), and
- * returns the secure Shopify `checkoutUrl` for the redirect.
- *
- * Request body: { items: CheckoutRequestItem[] }
- * Response:     { checkoutUrl: string }
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const items: CheckoutRequestItem[] = body.items ?? [];
+    const { items } = body;
 
-    // Validate items
-    if (!Array.isArray(items) || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.warn("[checkout-api] Received empty or invalid items array");
       return NextResponse.json(
-        { error: "Cart is empty." },
+        { message: "Cart is empty or invalid" },
         { status: 400 }
       );
     }
 
-    for (const item of items) {
-      if (
-        typeof item.variantId !== "string" ||
-        !item.variantId.startsWith("gid://") ||
-        !Number.isInteger(item.quantity) ||
-        item.quantity < 1 ||
-        item.quantity > 99
-      ) {
-        return NextResponse.json(
-          { error: "Invalid cart item data." },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Build Shopify cart server-side (Storefront token stays on server)
-    const lines = items.map((item) => ({
+    const lines = items.map((item: any) => ({
       merchandiseId: item.variantId,
-      quantity: item.quantity,
+      quantity: item.quantity || 1,
     }));
 
-    const { cart, userErrors } = await createCart(lines);
+    console.log("[checkout-api] Initializing checkout for lines:", JSON.stringify(lines, null, 2));
+
+    // Create checkout via Shopify Cart API
+    const response = await createCart(lines);
+    const { cart, userErrors } = response;
 
     if (userErrors && userErrors.length > 0) {
-      console.error("[checkout] Shopify userErrors:", userErrors);
+      console.error("[checkout-api] Shopify user errors:", JSON.stringify(userErrors, null, 2));
       return NextResponse.json(
-        { error: userErrors[0]?.message || "Failed to create cart." },
+        { 
+          message: userErrors[0].message || "Checkout is temporarily unavailable.",
+          details: userErrors 
+        },
         { status: 422 }
       );
     }
 
-    if (!cart?.checkoutUrl) {
+    if (!cart || !cart.checkoutUrl) {
+      console.error("[checkout-api] No cart or checkoutUrl returned from Shopify. Full response:", JSON.stringify(response, null, 2));
       return NextResponse.json(
-        { error: "Could not obtain checkout URL from Shopify." },
+        { message: "Could not generate checkout link. Please try again." },
         { status: 500 }
       );
     }
 
+    console.log("[checkout-api] Checkout successfully created:", cart.checkoutUrl);
     return NextResponse.json({ checkoutUrl: cart.checkoutUrl });
-  } catch (err) {
-    console.error("[checkout] error:", err);
+  } catch (error) {
+    console.error("[checkout-api] Fatal exception during checkout initialization:", error);
     return NextResponse.json(
-      { error: "Checkout failed. Please try again." },
+      { message: "Internal server error during checkout. Check server logs." },
       { status: 500 }
     );
   }
