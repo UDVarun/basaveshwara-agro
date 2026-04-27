@@ -24,52 +24,9 @@ export default function CheckoutButton({ className }: CheckoutButtonProps) {
 
   async function handleCheckout() {
     setLoading(true);
-    setError(null);
-
-    const lineItems = state.items
-      .filter((item) => item.quantity >= 1 && item.quantity <= 99)
-      .map((item) => ({
-        variantId: item.variantId,
-        quantity: item.quantity,
-      }));
-
-    if (lineItems.length === 0) {
-      setError(CLIENT_CHECKOUT_ERROR);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/v1/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lineItems }),
-      });
-
-      if (!res.ok) {
-        setError(
-          res.status === 429
-            ? "Server Capacity Limit. Please wait."
-            : CLIENT_CHECKOUT_ERROR
-        );
-        setLoading(false);
-        return;
-      }
-
-      const data = (await res.json()) as { checkoutUrl?: string };
-
-      if (!data.checkoutUrl) {
-        setError(CLIENT_CHECKOUT_ERROR);
-        setLoading(false);
-        return;
-      }
-
-      clearCart();
-      window.location.href = data.checkoutUrl;
-    } catch {
-      setError(CLIENT_CHECKOUT_ERROR);
-      setLoading(false);
-    }
+    // Instead of calling Shopify API and redirecting away, 
+    // we send the user to our custom internal checkout page on Vercel.
+    router.push("/checkout");
   }
 
   return (
