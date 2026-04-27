@@ -72,7 +72,6 @@ export default async function RootLayout({
       className={`${plusJakarta.variable} ${inter.variable} ${spaceMono.variable}`}
     >
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body
         className="flex min-h-screen flex-col bg-surface font-body text-on-surface antialiased pt-16"

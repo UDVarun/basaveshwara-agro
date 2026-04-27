@@ -4,6 +4,7 @@ export const CUSTOMER_QUERY = `
       id
       firstName
       lastName
+      createdAt
       emailAddress {
         email
       }

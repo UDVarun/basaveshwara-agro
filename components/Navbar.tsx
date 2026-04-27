@@ -64,7 +64,7 @@ export default function Navbar() {
             aria-label="Open Cart" 
             className="text-primary hover:scale-[1.05] transition-transform duration-300 relative group"
           >
-            <span className="material-symbols-outlined text-[24px]" data-icon="shopping_cart">shopping_cart</span>
+            <ShoppingBag className="w-5 h-5" />
             {mounted && cartCount > 0 && (
               <span className="absolute -top-1 -right-2 bg-secondary text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-[1.5px] border-white">
                 {cartCount}

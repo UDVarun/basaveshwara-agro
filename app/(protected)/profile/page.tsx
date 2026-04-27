@@ -19,14 +19,20 @@ export default async function ProfilePage() {
   }
 
   const orders = customer?.orders?.edges || [];
+  const firstName = customer?.firstName || "My";
+  
+  // Calculate "Member Since" string
+  const memberSinceStr = customer?.createdAt 
+    ? new Date(customer.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "Spring 2022";
 
   return (
     <main className="max-w-7xl mx-auto px-6 md:px-12 py-24 min-h-screen">
       {/* Hero Section */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-20 items-end">
         <div className="md:col-span-7">
-          <h1 className="text-6xl md:text-8xl font-headline font-semibold tracking-tighter text-primary leading-[0.9] mb-8">
-            My Harvests
+          <h1 className="text-6xl md:text-8xl font-headline font-semibold tracking-tighter text-primary leading-[0.9] mb-8 capitalize">
+            {firstName === "My" ? "My Harvests" : `${firstName}'s Harvests`}
           </h1>
           <p className="text-xl md:text-2xl text-on-surface-variant max-w-xl leading-relaxed font-light italic">
             A curated journal of your commitment to the earth. Every order is a step toward agricultural restoration and seasonal excellence.
@@ -35,7 +41,9 @@ export default async function ProfilePage() {
         <div className="md:col-span-5 flex flex-col items-start md:items-end">
           <div className="text-left md:text-right">
             <span className="block font-headline font-semibold text-primary uppercase tracking-[0.2em] text-xs mb-2">Member Since</span>
-            <span className="text-3xl font-headline font-medium text-on-surface tracking-tight">Autumn 2022</span>
+            <span className="text-3xl font-headline font-medium text-on-surface tracking-tight">
+              {memberSinceStr}
+            </span>
           </div>
         </div>
       </div>

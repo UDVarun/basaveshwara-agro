@@ -177,10 +177,10 @@ export default function HomeProductShowcase({
                 <button
                   type="button"
                   onClick={decrement}
-                  className="flex flex-1 h-full items-center justify-center text-xl transition-colors hover:bg-agro-outline-ghost/10"
+                  className="flex flex-1 h-full items-center justify-center transition-colors hover:bg-agro-outline-ghost/10"
                   aria-label="Decrease quantity"
                 >
-                  &minus;
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="w-12 text-center text-sm font-bold font-serif">
                   {quantity}
@@ -188,10 +188,10 @@ export default function HomeProductShowcase({
                 <button
                   type="button"
                   onClick={increment}
-                  className="flex flex-1 h-full items-center justify-center text-xl transition-colors hover:bg-agro-outline-ghost/10"
+                  className="flex flex-1 h-full items-center justify-center transition-colors hover:bg-agro-outline-ghost/10"
                   aria-label="Increase quantity"
                 >
-                  &#43;
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -210,7 +210,7 @@ export default function HomeProductShowcase({
                         : "cursor-not-allowed bg-agro-surface-low text-agro-muted border border-agro-outline-ghost/50",
                     ].join(" ")}
                   >
-                    <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                    <ShoppingBag className="h-4 w-4" aria-hidden="true" />
                     {isAvailable ? "Provision to Cart" : "Provision Exhausted"}
                   </button>
                 ) : (

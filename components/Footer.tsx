@@ -1,7 +1,15 @@
-"use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { 
+  MapPin, 
+  Mail, 
+  Share2, 
+  MessageSquare, 
+  AtSign, 
+  ArrowRight,
+  ShieldCheck,
+  ChevronRight
+} from "lucide-react";
 
 const FOOTER_LINKS = {
   discover: [
@@ -32,75 +40,76 @@ export default function Footer() {
   if (pathname === "/checkout") return null;
 
   return (
-    <footer className="w-full bg-surface-container-low text-on-surface border-t border-outline-variant/10">
-      {/* Newsletter Section - Premium Polish */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 pt-16 pb-12 border-b border-outline-variant/20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-4">
-            <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight text-primary leading-[1.1]">
-              Cultivate Excellence <br />
-              <span className="text-secondary opacity-90 inline-block mt-1">Modern Agronomy Science.</span>
+    <footer className="w-full bg-agro-surface-low text-agro-ink border-t border-agro-outline-ghost/10">
+      {/* Newsletter Section */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 pt-20 pb-16 border-b border-agro-outline-ghost/20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-6">
+            <h2 className="text-4xl md:text-5xl font-headline font-semibold tracking-tighter text-agro-ink leading-[0.9] uppercase">
+              Cultivate <br />
+              <span className="text-agro-green italic">Excellence.</span>
             </h2>
-            <p className="font-body text-on-surface-variant text-sm max-w-md leading-relaxed opacity-80">
+            <p className="font-body text-agro-muted text-sm max-w-md leading-relaxed opacity-80 italic">
               Join 5,000+ forward-thinking farmers receiving monthly biological assessments and soil health reports.
             </p>
           </div>
           <div className="relative">
-            <div className="flex flex-col sm:flex-row gap-3 p-1.5 bg-surface-container-highest/30 backdrop-blur-sm border border-outline-variant/40 rounded-2xl shadow-sm transition-all hover:shadow-md hover:border-outline-variant/60">
+            <div className="flex flex-col sm:flex-row gap-4 p-2 bg-white rounded-2xl shadow-xl shadow-agro-green/5 border border-agro-outline-ghost/30">
               <input 
                 type="email" 
-                placeholder="Enter your email"
-                className="flex-grow bg-transparent border-none text-on-surface font-body px-5 py-2.5 focus:ring-0 outline-none text-sm placeholder:text-on-surface/40"
+                placeholder="Institutional email address"
+                className="flex-grow bg-transparent border-none text-agro-ink font-body px-5 py-3 focus:ring-0 outline-none text-sm placeholder:text-agro-muted/40"
               />
-              <button className="bg-primary text-on-primary px-8 py-2.5 rounded-xl font-headline font-bold text-sm hover:translate-y-[-1px] transition-all whitespace-nowrap active:translate-y-[1px] shadow-[0_4px_12px_rgba(30,93,74,0.15)] hover:shadow-[0_6px_20px_rgba(30,93,74,0.2)]">
-                Stay Informed
+              <button className="bg-agro-green text-white px-8 py-3 rounded-xl font-bold text-[11px] uppercase tracking-[0.2em] transition-all whitespace-nowrap active:scale-95 shadow-lg shadow-agro-green/10">
+                Subscribe
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Link Grid - Architectural & Compact */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-8">
+      {/* Main Link Grid */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16">
           {/* Brand Info */}
-          <div className="lg:col-span-4 space-y-10">
+          <div className="lg:col-span-4 space-y-12">
             <Link href="/" className="inline-block group">
-              <span className="text-2xl font-headline font-black tracking-tighter text-primary group-hover:opacity-80 transition-opacity">
-                BASAVESHWARA<span className="text-secondary">.</span>AGRO
+              <span className="text-3xl font-headline font-black tracking-tighter text-agro-ink group-hover:text-agro-green transition-colors">
+                BASAVESHWARA<span className="text-agro-gold">.</span>AGRO
               </span>
             </Link>
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary border border-outline-variant/10 shadow-sm">
-                  <span className="material-symbols-outlined text-xl">location_on</span>
+                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-agro-green border border-agro-outline-ghost/30 shadow-editorial">
+                  <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold text-primary/40 uppercase tracking-[0.25em] mb-1.5 font-label">Headquarters</h4>
-                  <p className="text-[13px] font-medium text-on-surface leading-snug">Indira Gandhi Rd, Joythinagar,<br />Chikkamagaluru, KA 577101</p>
+                  <h4 className="text-[10px] font-bold text-agro-muted uppercase tracking-[0.3em] mb-2 font-label">Headquarters</h4>
+                  <p className="text-sm font-medium text-agro-ink leading-snug">Indira Gandhi Rd, Joythinagar,<br />Chikkamagaluru, KA 577101</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary border border-outline-variant/10 shadow-sm">
-                  <span className="material-symbols-outlined text-xl">mail</span>
+                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-agro-green border border-agro-outline-ghost/30 shadow-editorial">
+                  <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold text-primary/40 uppercase tracking-[0.25em] mb-1.5 font-label">Support</h4>
-                  <p className="text-[13px] font-medium text-on-surface">contact@basaveshwaraagro.in</p>
+                  <h4 className="text-[10px] font-bold text-agro-muted uppercase tracking-[0.3em] mb-2 font-label">Institutional Support</h4>
+                  <p className="text-sm font-medium text-agro-ink mb-1">contact@basaveshwaraagro.in</p>
+                  <p className="text-[10px] font-bold text-agro-muted uppercase tracking-widest">+91 948XXXXXXX</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Links Grid - High Density */}
+          {/* Links Grid */}
           <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-12 lg:gap-8">
             <div>
-              <h4 className="text-[11px] font-bold text-primary uppercase tracking-[0.3em] mb-8 font-label">Discover</h4>
+              <h4 className="text-[11px] font-bold text-agro-ink uppercase tracking-[0.4em] mb-10 pb-2 border-b border-agro-outline-ghost/10 w-fit">Discover</h4>
               <ul className="space-y-4">
                 {FOOTER_LINKS.discover.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="text-[13px] text-on-surface-variant hover:text-primary transition-all font-medium flex items-center group">
-                      <span className="w-0 group-hover:w-3 h-[1px] bg-secondary mr-0 group-hover:mr-2 transition-all opacity-0 group-hover:opacity-100"></span>
+                    <Link href={link.href} className="text-[11px] font-bold uppercase tracking-[0.2em] text-agro-muted hover:text-agro-green transition-all flex items-center group">
+                      <ChevronRight className="w-3.5 h-3.5 mr-0 group-hover:mr-2 opacity-0 group-hover:opacity-100 transition-all text-agro-gold" />
                       {link.label}
                     </Link>
                   </li>
@@ -108,12 +117,12 @@ export default function Footer() {
               </ul>
             </div>
             <div>
-              <h4 className="text-[11px] font-bold text-primary uppercase tracking-[0.3em] mb-8 font-label">Company</h4>
+              <h4 className="text-[11px] font-bold text-agro-ink uppercase tracking-[0.4em] mb-10 pb-2 border-b border-agro-outline-ghost/10 w-fit">Company</h4>
               <ul className="space-y-4">
                 {FOOTER_LINKS.company.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="text-[13px] text-on-surface-variant hover:text-primary transition-all font-medium flex items-center group">
-                      <span className="w-0 group-hover:w-3 h-[1px] bg-secondary mr-0 group-hover:mr-2 transition-all opacity-0 group-hover:opacity-100"></span>
+                    <Link href={link.href} className="text-[11px] font-bold uppercase tracking-[0.2em] text-agro-muted hover:text-agro-green transition-all flex items-center group">
+                      <ChevronRight className="w-3.5 h-3.5 mr-0 group-hover:mr-2 opacity-0 group-hover:opacity-100 transition-all text-agro-gold" />
                       {link.label}
                     </Link>
                   </li>
@@ -121,12 +130,12 @@ export default function Footer() {
               </ul>
             </div>
             <div className="col-span-1">
-              <h4 className="text-[11px] font-bold text-primary uppercase tracking-[0.3em] mb-8 font-label">Support</h4>
+              <h4 className="text-[11px] font-bold text-agro-ink uppercase tracking-[0.4em] mb-10 pb-2 border-b border-agro-outline-ghost/10 w-fit">Support</h4>
               <ul className="space-y-4">
                 {FOOTER_LINKS.support.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="text-[13px] text-on-surface-variant hover:text-primary transition-all font-medium flex items-center group">
-                      <span className="w-0 group-hover:w-3 h-[1px] bg-secondary mr-0 group-hover:mr-2 transition-all opacity-0 group-hover:opacity-100"></span>
+                    <Link href={link.href} className="text-[11px] font-bold uppercase tracking-[0.2em] text-agro-muted hover:text-agro-green transition-all flex items-center group">
+                      <ChevronRight className="w-3.5 h-3.5 mr-0 group-hover:mr-2 opacity-0 group-hover:opacity-100 transition-all text-agro-gold" />
                       {link.label}
                     </Link>
                   </li>
@@ -137,28 +146,28 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Bar - Minimal & High Contrast */}
-      <div className="border-t border-outline-variant/10 bg-surface-container py-8">
+      {/* Bottom Bar */}
+      <div className="border-t border-agro-outline-ghost/10 bg-white/50 py-10">
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-            <span className="text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] font-label">
+            <span className="text-[10px] font-bold text-agro-muted uppercase tracking-[0.2em] font-label">
               © {currentYear} Sri Basaveshwara Agro Kendra
             </span>
-            <div className="hidden md:block w-px h-3 bg-outline-variant/30"></div>
-            <span className="text-[11px] font-bold text-secondary/40 font-label tracking-tighter">
-              CKM-AG-912-2024
+            <div className="hidden md:block w-px h-3 bg-agro-outline-ghost/30"></div>
+            <span className="text-[10px] font-bold text-agro-gold/60 font-label tracking-tighter uppercase italic">
+              Certified Agrarian Distribution &bull; CKM-AG-912
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="#" className="w-10 h-10 rounded-2xl bg-surface border border-outline-variant/20 flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary hover:bg-primary/5 transition-all shadow-sm">
-              <span className="material-symbols-outlined text-[18px]">share</span>
+            <Link href="#" className="w-12 h-12 rounded-2xl bg-white border border-agro-outline-ghost/30 flex items-center justify-center text-agro-muted hover:text-agro-green hover:border-agro-green hover:bg-agro-green/5 transition-all shadow-editorial group">
+              <Share2 className="w-4 h-4 transition-transform group-hover:scale-110" />
             </Link>
-            <Link href="#" className="w-10 h-10 rounded-2xl bg-surface border border-outline-variant/20 flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary hover:bg-primary/5 transition-all shadow-sm">
-              <span className="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+            <Link href="#" className="w-12 h-12 rounded-2xl bg-white border border-agro-outline-ghost/30 flex items-center justify-center text-agro-muted hover:text-agro-green hover:border-agro-green hover:bg-agro-green/5 transition-all shadow-editorial group">
+              <MessageSquare className="w-4 h-4 transition-transform group-hover:scale-110" />
             </Link>
-            <Link href="#" className="w-10 h-10 rounded-2xl bg-surface border border-outline-variant/20 flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary hover:bg-primary/5 transition-all shadow-sm">
-              <span className="material-symbols-outlined text-[18px]">alternate_email</span>
+            <Link href="#" className="w-12 h-12 rounded-2xl bg-white border border-agro-outline-ghost/30 flex items-center justify-center text-agro-muted hover:text-agro-green hover:border-agro-green hover:bg-agro-green/5 transition-all shadow-editorial group">
+              <AtSign className="w-4 h-4 transition-transform group-hover:scale-110" />
             </Link>
           </div>
         </div>

@@ -1,39 +1,44 @@
-"use client";
-
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Globe, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-[calc(100vh-80px)] flex items-center overflow-hidden py-12 px-6 md:px-12 bg-surface">
+    <section className="relative min-h-[calc(100vh-80px)] flex items-center overflow-hidden py-12 px-6 md:px-12 bg-agro-bg">
       <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
         {/* Text Content */}
         <div className="lg:col-span-7 z-10 flex flex-col justify-center">
-          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 bg-surface-container-low rounded-full mb-6 border border-outline-variant/15 w-fit">
-            <span className="text-secondary font-bold text-[9px] tracking-widest uppercase">Premium Agronomy</span>
-            <div className="w-1 h-1 bg-secondary rounded-full"></div>
-            <span className="text-on-surface/60 text-[9px] font-medium uppercase tracking-wider">Excellence Since 2009</span>
+          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 bg-agro-surface-low rounded-full mb-8 border border-agro-outline-ghost/30 w-fit">
+            <Globe className="w-3.5 h-3.5 text-agro-gold" />
+            <span className="text-agro-gold font-bold text-[9px] tracking-[0.2em] uppercase">Premium Agronomy</span>
+            <div className="w-1 h-1 bg-agro-outline-ghost/30 rounded-full"></div>
+            <span className="text-agro-ink/40 text-[9px] font-bold uppercase tracking-widest">Excellence Since 2009</span>
           </div>
           
-          <h1 className="text-5xl lg:text-7xl font-headline font-semibold text-primary tracking-[-0.04em] leading-[1.0] mb-8">
+          <h1 className="text-6xl lg:text-8xl font-headline font-semibold text-agro-ink tracking-tighter leading-[0.9] mb-10">
             Nurturing <br/>
-            <span className="relative inline-block">
+            <span className="relative inline-block text-agro-green italic">
               Excellence
-              <div className="absolute -bottom-1.5 left-0 w-full h-1.5 bg-secondary/30"></div>
+              <div className="absolute -bottom-2 left-0 w-full h-1 bg-agro-gold/20 rounded-full"></div>
             </span>
           </h1>
           
-          <p className="text-base lg:text-lg text-on-surface-variant max-w-lg leading-relaxed mb-10 opacity-80 font-body">
+          <p className="text-lg lg:text-xl text-agro-muted max-w-lg leading-relaxed mb-12 opacity-90 font-body">
             Sri Basaveshwara Agro Kendra bridges the gap between traditional wisdom and modern agrarian science, delivering the world&apos;s finest biological assets to your soil.
           </p>
           
-          <div className="flex flex-wrap gap-5 items-center">
-            <button className="bg-primary text-on-primary px-8 py-4 rounded-xl font-headline font-bold text-base hover:scale-[1.02] transition-all shadow-editorial active:scale-98">
-              Explore Catalog
-            </button>
-            <a href="/products" className="group flex items-center gap-2.5 text-primary font-bold font-headline tracking-tight text-base">
-              View Collections
-              <span className="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
-            </a>
+          <div className="flex flex-wrap gap-8 items-center">
+            <Link href="/products" className="group relative bg-agro-green text-white px-10 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-agro-ink transition-all shadow-xl shadow-agro-green/10 flex items-center gap-3 overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+              <span>Explore Catalog</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link href="/about" className="group flex items-center gap-3 text-agro-ink font-bold text-[11px] uppercase tracking-[0.2em] hover:text-agro-green transition-all">
+              Our Heritage
+              <div className="w-8 h-8 rounded-full border border-agro-outline-ghost/30 flex items-center justify-center group-hover:bg-agro-surface-low transition-colors">
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </Link>
           </div>
         </div>
 
@@ -63,10 +68,11 @@ export default function HeroSection() {
           </div>
           
           {/* Luxury Badge */}
-          <div className="absolute -top-4 -right-4 w-24 h-24 bg-secondary rounded-full flex items-center justify-center border-4 border-surface shadow-xl z-30 transition-all duration-500 hover:rotate-0 transform rotate-6">
+          <div className="absolute -top-4 -right-4 w-28 h-28 bg-agro-gold rounded-full flex flex-col items-center justify-center border-4 border-agro-bg shadow-2xl z-30 transition-all duration-500 hover:rotate-0 transform rotate-6">
+            <Sparkles className="w-4 h-4 text-white/50 mb-1" />
             <div className="text-center text-white">
-              <div className="text-[8px] font-bold uppercase tracking-tighter opacity-80">Established</div>
-              <div className="text-xl font-headline font-extrabold leading-none">2009</div>
+              <div className="text-[7px] font-bold uppercase tracking-[0.2em] opacity-60">Est.</div>
+              <div className="text-2xl font-headline font-bold leading-none tracking-tighter">2009</div>
             </div>
           </div>
         </div>

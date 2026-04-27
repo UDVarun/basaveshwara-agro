@@ -4,6 +4,15 @@ import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import type { ShopifyProductVariant } from "@/types/shopify";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { 
+  CheckCircle2, 
+  Minus, 
+  Plus, 
+  ShoppingBag, 
+  Zap, 
+  AlertCircle 
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ProductActionsProps {
   variants: ShopifyProductVariant[];
@@ -54,74 +63,95 @@ export default function ProductActions({
 
   return (
     <div className="bg-surface-container-lowest p-6 rounded-3xl shadow-editorial border border-outline-variant/15 mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2 text-primary font-medium">
-          <span className="material-symbols-outlined text-sm">check_circle</span>
-          <span>{selectedVariant.availableForSale ? "In Stock (Ships in 24hrs)" : "Currently Unavailable"}</span>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-2.5">
+          {selectedVariant.availableForSale ? (
+            <div className="flex items-center gap-2 text-agro-green bg-agro-green/5 px-3 py-1 rounded-full border border-agro-green/10">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Harvest Ready</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-agro-muted bg-agro-muted/5 px-3 py-1 rounded-full border border-agro-muted/10">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Provision Exhausted</span>
+            </div>
+          )}
         </div>
-        <div className="text-sm text-on-surface-variant font-label">SKU: {sku || `AG-${handle.slice(0, 5).toUpperCase()}`}</div>
+        <div className="text-[10px] font-bold text-agro-muted tracking-[0.1em] opacity-40 uppercase">Registry: {sku || `AG-${handle.slice(0, 5).toUpperCase()}`}</div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4 mb-8">
         {/* Quantity */}
-        <div className="flex items-center border border-outline-variant rounded-xl h-12 w-32 bg-surface overflow-hidden">
+        <div className="flex items-center border border-agro-outline-ghost/30 rounded-xl h-14 w-full sm:w-36 bg-agro-surface-low overflow-hidden transition-all focus-within:border-agro-green focus-within:ring-1 focus-within:ring-agro-green/20">
           <button
             onClick={() => handleQuantityChange("dec")}
             aria-label="Decrease quantity"
-            className="px-3 text-on-surface-variant hover:text-primary h-full flex items-center justify-center transition-colors"
+            className="w-12 text-agro-muted hover:text-agro-green h-full flex items-center justify-center transition-colors hover:bg-agro-green/5"
           >
-            <span className="material-symbols-outlined text-sm">remove</span>
+            <Minus className="w-3.5 h-3.5" />
           </button>
           <input
             readOnly
             aria-label="Quantity"
-            className="w-full h-full text-center border-none bg-transparent font-medium focus:ring-0 text-on-surface"
+            className="w-full h-full text-center border-none bg-transparent font-headline font-semibold text-agro-ink focus:ring-0 text-sm"
             type="text"
             value={quantity}
           />
           <button
             onClick={() => handleQuantityChange("inc")}
             aria-label="Increase quantity"
-            className="px-3 text-on-surface-variant hover:text-primary h-full flex items-center justify-center transition-colors"
+            className="w-12 text-agro-muted hover:text-agro-green h-full flex items-center justify-center transition-colors hover:bg-agro-green/5"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Pack Size / Variant Select */}
+        {/* Configuration Select */}
         <div className="flex-grow">
-          <select
-            value={selectedVariant.id}
-            onChange={(e) => {
-              const variant = variants.find(v => v.id === e.target.value);
-              if (variant) setSelectedVariant(variant);
-            }}
-            className="w-full h-12 border border-outline-variant rounded-xl bg-surface text-on-surface px-4 focus:border-primary focus:ring-1 focus:ring-primary font-body outline-none transition-all"
-          >
-            {variants.map(v => (
-              <option key={v.id} value={v.id}>
-                {v.title === "Default Title" ? "Standard Pack" : v.title}
-              </option>
-            ))}
-          </select>
+          <div className="relative group">
+            <select
+              value={selectedVariant.id}
+              onChange={(e) => {
+                const variant = variants.find(v => v.id === e.target.value);
+                if (variant) setSelectedVariant(variant);
+              }}
+              className="w-full h-14 border border-agro-outline-ghost/30 rounded-xl bg-agro-surface-low text-agro-ink px-4 focus:border-agro-green focus:ring-1 focus:ring-agro-green/20 font-body outline-none transition-all appearance-none cursor-pointer"
+            >
+              {variants.map(v => (
+                <option key={v.id} value={v.id}>
+                  {v.title === "Default Title" ? "Institutional Grade Pack" : v.title}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+              <Minus className="w-3.5 h-3.5 rotate-90" />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <button
+      <div className="flex flex-col gap-3">
+        <motion.button
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
           onClick={handleAddToCart}
           disabled={!selectedVariant.availableForSale}
-          className="flex-1 bg-surface border-2 border-primary text-primary h-14 rounded-2xl font-semibold font-label hover:bg-surface-container-low transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group relative h-14 w-full flex items-center justify-center gap-3 bg-agro-green text-white rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-agro-ink transition-all shadow-xl shadow-agro-green/10 disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden"
         >
-          <span className="material-symbols-outlined">add_shopping_cart</span>
-          <span>Add to Cart</span>
-        </button>
+          {/* Shine effect */}
+          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+          
+          <ShoppingBag className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+          <span>Provision to Cart</span>
+        </motion.button>
+        
         <button
           onClick={handleBuyNow}
           disabled={!selectedVariant.availableForSale}
-          className="flex-1 bg-primary text-on-primary h-14 rounded-2xl font-semibold font-label hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-14 w-full flex items-center justify-center gap-3 bg-white border border-agro-outline-ghost/50 text-agro-muted rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-agro-surface-low hover:text-agro-ink transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          Buy Now
+          <Zap className="w-3.5 h-3.5" />
+          <span>Acquire Immediately</span>
         </button>
       </div>
     </div>

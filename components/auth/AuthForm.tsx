@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Loader2, Mail, ShieldCheck, AlertCircle } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface AuthFormProps {
   type?: "login" | "register";
@@ -24,6 +25,9 @@ const formCopy = {
 } as const;
 
 export default function AuthForm({ type = "login" }: AuthFormProps) {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
@@ -122,7 +126,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
       const result = await signIn("email-otp", {
         email,
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -140,7 +144,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
   };
 
   const handleGoogleLogin = () => {
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl });
   };
 
   return (
@@ -149,7 +153,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
         {/* Tab toggle */}
         <div className="mb-6 grid grid-cols-2 rounded-[14px] bg-stone-100 p-1.5">
           <Link
-            href="/login"
+            href={`/login${callbackUrl !== "/" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
             className={`rounded-[10px] px-4 py-3 text-center text-sm font-semibold transition-colors ${
               type === "login"
                 ? "bg-white text-stone-950 shadow-sm"
@@ -159,7 +163,7 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
             Sign in
           </Link>
           <Link
-            href="/register"
+            href={`/register${callbackUrl !== "/" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
             className={`rounded-[10px] px-4 py-3 text-center text-sm font-semibold transition-colors ${
               type === "register"
                 ? "bg-white text-stone-950 shadow-sm"
