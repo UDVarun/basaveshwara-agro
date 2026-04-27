@@ -4,17 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function CheckoutPage() {
-  const { state, subtotal } = useCart();
+  const { state, subtotal, clearCart } = useCart();
   const items = state.items;
 
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
-  const router = useRouter();
 
   const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
@@ -43,7 +40,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Redirect to Shopify's secure checkout page
+      // Clear local cart then hand off to Shopify's secure hosted checkout
+      clearCart();
       window.location.href = data.checkoutUrl;
     } catch {
       setCheckoutError("Network error. Please check your connection.");
