@@ -8,6 +8,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -191,25 +192,75 @@ const initialState: CartState = {
   isHydrated: false,
 };
 
+// ... [initial types and reducer stay same]
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession();
   const [state, dispatch] = useReducer(cartReducer, initialState);
 
-  // Initial load from localStorage
+  // 1. Initial load from localStorage (Guest mode)
   useEffect(() => {
     const items = loadCartFromStorage();
     dispatch({ type: "HYDRATE", payload: items });
   }, []);
 
-  // Sync cart items to localStorage on every change, but only after initial hydration
+  // 2. Server Sync: Load and Push
+  useEffect(() => {
+    if (status === "loading" || !state.isHydrated) return;
+
+    if (status === "authenticated") {
+      // Fetch server cart upon login
+      const fetchServerCart = async () => {
+        try {
+          const res = await fetch("/api/v1/cart");
+          if (res.ok) {
+            const data = await res.json();
+            // User requested: "if user add item to cart and sign outs then the item myst not be vesible... 
+            // when user logs back in the item myst vesible".
+            // We overwrite the guest cart with the server cart.
+            dispatch({ type: "HYDRATE", payload: data.items });
+          }
+        } catch (err) {
+          console.error("[CartContext] Failed to fetch server cart:", err);
+        }
+      };
+      
+      fetchServerCart();
+    } else if (status === "unauthenticated") {
+      // User logged out: Clear the cart state immediately (Isolation requirement)
+      dispatch({ type: "CLEAR_CART" });
+      localStorage.removeItem(CART_STORAGE_KEY);
+    }
+  }, [status, state.isHydrated]);
+
+  // 3. Persistent Sync: Push changes to Redis if logged in
   useEffect(() => {
     if (!state.isHydrated) return;
-    
+
+    // LocalStorage sync (for guest or redundancy)
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
-    } catch {
-      // Quota exceeded or private browsing — silently ignore
+    } catch {}
+
+    // Server-side sync for cross-device persistence
+    if (status === "authenticated") {
+      const syncWithServer = async () => {
+        try {
+          await fetch("/api/v1/cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: state.items }),
+          });
+        } catch (err) {
+          console.warn("[CartContext] Server sync failed:", err);
+        }
+      };
+
+      // Debounce sync slightly to avoid spamming Redis during rapid +/- quantity changes
+      const timer = setTimeout(syncWithServer, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [state.items, state.isHydrated]);
+  }, [state.items, state.isHydrated, status]);
 
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity"> & { quantity: number }) => {

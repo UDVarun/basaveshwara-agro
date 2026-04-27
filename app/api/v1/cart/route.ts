@@ -1,93 +1,70 @@
-import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { redis, getCartKey } from "@/lib/redis";
 import { z } from "zod";
-import { createCart, getCart } from "@/lib/shopify";
-import { cartLimiter, readLimiter } from "@/lib/ratelimit";
-import {
-  checkRateLimit,
-  errorResponse,
-  successResponse,
-} from "@/lib/api-helpers";
 
-// ─── Input schemas ────────────────────────────────────────────────────────────
-
-const CartLineInput = z.object({
-  merchandiseId: z
-    .string()
-    .min(1)
-    .max(500)
-    .regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/, "Invalid variant ID"),
+// Shared validation schema for cart items (sync with CartContext.tsx types)
+const CartItemSchema = z.object({
+  variantId: z.string(),
+  title: z.string(),
+  price: z.number().int(),
+  currencyCode: z.string(),
   quantity: z.number().int().min(1).max(99),
+  imageUrl: z.string().nullable(),
+  imageAlt: z.string().nullable(),
+  handle: z.string(),
 });
 
-const CreateCartSchema = z.object({
-  lines: z.array(CartLineInput).min(1).max(100),
+const CartSyncSchema = z.object({
+  items: z.array(CartItemSchema),
 });
 
-// ─── POST /api/v1/cart — create a new cart ────────────────────────────────────
-
-export async function POST(req: NextRequest) {
-  // 1. Rate limit (cart mutation)
-  const rateLimitResponse = await checkRateLimit(cartLimiter, req);
-  if (rateLimitResponse) return rateLimitResponse;
-
-  // 2. Parse & validate body
-  let body: unknown;
+/**
+ * GET: Fetch the user's persistent cart from Redis.
+ */
+export async function GET() {
   try {
-    body = await req.json();
-  } catch {
-    return errorResponse(400, "Invalid JSON body.");
-  }
-
-  const parsed = CreateCartSchema.safeParse(body);
-  if (!parsed.success) {
-    return errorResponse(400, "Invalid cart input.");
-  }
-
-  // 3. Create cart via Shopify
-  try {
-    const result = await createCart(parsed.data.lines);
-
-    if (result.userErrors.length > 0) {
-      return errorResponse(422, "Could not create cart. Please try again.");
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return successResponse(result.cart, 201);
-  } catch {
-    return errorResponse(500);
+    const cartKey = getCartKey(session.user.id);
+    const cartData = await redis.get(cartKey);
+
+    return NextResponse.json({ items: cartData || [] });
+  } catch (error) {
+    console.error("[api/cart] GET error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// ─── GET /api/v1/cart?cartId=... — fetch an existing cart ────────────────────
-
-const CartIdSchema = z
-  .string()
-  .min(1)
-  .max(500)
-  .regex(/^gid:\/\/shopify\/Cart\//, "Invalid cart ID");
-
-export async function GET(req: NextRequest) {
-  // 1. Rate limit (read)
-  const rateLimitResponse = await checkRateLimit(readLimiter, req);
-  if (rateLimitResponse) return rateLimitResponse;
-
-  // 2. Validate cartId param
-  const cartId = req.nextUrl.searchParams.get("cartId");
-  const parsed = CartIdSchema.safeParse(cartId);
-
-  if (!parsed.success) {
-    return errorResponse(400, "Invalid cart ID.");
-  }
-
-  // 3. Fetch cart
+/**
+ * POST: Sync the client-side cart to Redis.
+ */
+export async function POST(request: Request) {
   try {
-    const cart = await getCart(parsed.data);
-
-    if (!cart) {
-      return errorResponse(404, "Cart not found.");
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return successResponse(cart);
-  } catch {
-    return errorResponse(500);
+    const body = await request.json();
+    const result = CartSyncSchema.safeParse(body);
+
+    if (!result.success) {
+      console.error("[api/cart] Validation failed:", result.error);
+      return NextResponse.json({ error: "Invalid cart data" }, { status: 400 });
+    }
+
+    const cartKey = getCartKey(session.user.id);
+    
+    // Core Isolation: We only ever write to the current session's key.
+    await redis.set(cartKey, result.data.items);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[api/cart] POST error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
