@@ -1,25 +1,30 @@
 import { auth } from "@/auth";
-import { getCustomer } from "@/lib/shopify";
+import { getCustomer, getOrdersByEmail } from "@/lib/shopify";
 import { redirect } from "next/navigation";
+import { formatPrice } from "@/lib/format";
 
 export default async function ProfilePage() {
   const session = await auth();
 
-  if (!session?.accessToken) {
+  if (!session?.user?.email) {
     redirect("/login");
   }
 
   let customer = null;
-  if (session.provider === "shopify") {
-    try {
-      customer = await getCustomer(session.accessToken);
-    } catch (error) {
-      console.error("[ProfilePage] Shopify fetch error:", error);
-    }
-  }
+  let adminOrders: any[] = [];
 
-  const orders = customer?.orders?.edges || [];
-  const firstName = customer?.firstName || "My";
+  // Parallel fetch for speed
+  const [customerData, ordersData] = await Promise.all([
+    session.provider === "shopify" && session.accessToken 
+      ? getCustomer(session.accessToken).catch(() => null)
+      : Promise.resolve(null),
+    getOrdersByEmail(session.user.email)
+  ]);
+
+  customer = customerData;
+  adminOrders = ordersData;
+
+  const firstName = customer?.firstName || session.user.name?.split(' ')[0] || "My";
   
   // Calculate "Member Since" string
   const memberSinceStr = customer?.createdAt 
@@ -56,16 +61,16 @@ export default async function ProfilePage() {
           
           {/* Filter Bar */}
           <div className="flex gap-8 border-b border-outline-variant/15 pb-4">
-            <button className="text-primary font-headline font-semibold tracking-tight">Active Yields ({orders.length > 0 ? orders.length : 2})</button>
+            <button className="text-primary font-headline font-semibold tracking-tight">Active Yields ({adminOrders.length})</button>
             <button className="text-stone-400 font-headline font-medium tracking-tight hover:text-primary transition-colors">Archived</button>
             <button className="text-stone-400 font-headline font-medium tracking-tight hover:text-primary transition-colors">Scheduled</button>
           </div>
 
           {/* Orders Map */}
-          {orders.length > 0 ? (
-             orders.map(({ node: order }: any, index: number) => {
+          {adminOrders.length > 0 ? (
+             adminOrders.map(({ node: order }: any, index: number) => {
                const firstItem = order.lineItems?.edges[0]?.node;
-               const imageUrl = firstItem?.image?.url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAURtJV42ScTna8TspbNBu7kRAGX7pzXfP5ZSs7iaSqfK3CMS81b_aijs0yS6dtpNZoi28IePCj3-VPvIZPNgaFHIo-UEcIsx5TyFdSmbpIyVroQfW3lbj8Ccc6p6Ji0ML0QLD8gm1h3XaI1oj3pyxuDHK_QhmAmNlhz8YFZOVNQOccMO7BJx1hY_MQn8GYjk0lpBNjMZl7T-OmOAz6-QpuwPjeScCO-R34j66vqDn6QxRgiOUdl7KgJvyR1NYv1pP7MwEMCrgxXag"; // Fallback image
+               const imageUrl = firstItem?.image?.url || "https://images.unsplash.com/photo-1615485290382-441e4d0c9cb5?q=80&w=2070&auto=format&fit=crop"; // Better fallback
                
                const dateStr = new Date(order.processedAt).toLocaleDateString("en-US", {
                  month: "long",
@@ -73,7 +78,7 @@ export default async function ProfilePage() {
                  year: "numeric"
                });
 
-               const isFulfilled = order.fulfillmentStatus === 'FULFILLED';
+               const isFulfilled = order.fulfillmentStatus?.toUpperCase() === 'FULFILLED';
 
                return (
                  <div key={order.id} className="group relative bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10 hover:scale-[1.01] transition-all duration-500 hover:shadow-2xl hover:shadow-on-surface/5">
@@ -83,7 +88,7 @@ export default async function ProfilePage() {
                        <div className={`absolute inset-0 ${index % 2 === 0 ? 'bg-primary/10' : 'bg-secondary/10'} mix-blend-multiply`}></div>
                        <div className="absolute top-4 left-4">
                          <span className={`${isFulfilled ? 'bg-surface-container-highest text-on-surface border border-outline-variant/20' : 'bg-primary text-on-primary'} text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full`}>
-                            {isFulfilled ? 'Preparing' : 'In Transit'}
+                            {isFulfilled ? 'Fulfilled' : 'In Processing'}
                          </span>
                        </div>
                      </div>
@@ -100,7 +105,7 @@ export default async function ProfilePage() {
                        </div>
                        <div className="flex items-center justify-between pt-6 border-t border-outline-variant/10 mt-auto">
                          <span className="text-sm font-label font-medium text-secondary italic">
-                           Total: {order.totalPrice.amount} {order.totalPrice.currencyCode}
+                           Total: {formatPrice(order.totalPrice.amount, order.totalPrice.currencyCode)}
                          </span>
                          <button className="flex items-center gap-2 group/btn">
                            <span className="text-sm font-headline font-bold text-primary group-hover/btn:underline underline-offset-4 decoration-primary/30">MANAGE ORDER</span>
@@ -113,72 +118,14 @@ export default async function ProfilePage() {
                );
              })
           ) : (
-            // Static empty state from mockup
-            <>
-              {/* Order Card 1: Premium Glassmorphic */}
-              <div className="group relative bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10 hover:scale-[1.01] transition-all duration-500 hover:shadow-2xl hover:shadow-on-surface/5">
-                <div className="flex flex-col md:flex-row h-full">
-                  <div className="md:w-1/3 relative h-64 md:h-auto overflow-hidden">
-                    <img alt="close-up of vibrant purple heirloom carrots and earthy golden beets in a rustic wooden crate under soft morning light" className="w-full h-full object-cover grayscale-[0.2] group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAURtJV42ScTna8TspbNBu7kRAGX7pzXfP5ZSs7iaSqfK3CMS81b_aijs0yS6dtpNZoi28IePCj3-VPvIZPNgaFHIo-UEcIsx5TyFdSmbpIyVroQfW3lbj8Ccc6p6Ji0ML0QLD8gm1h3XaI1oj3pyxuDHK_QhmAmNlhz8YFZOVNQOccMO7BJx1hY_MQn8GYjk0lpBNjMZl7T-OmOAz6-QpuwPjeScCO-R34j66vqDn6QxRgiOUdl7KgJvyR1NYv1pP7MwEMCrgxXag"/>
-                    <div className="absolute inset-0 bg-primary/10 mix-blend-multiply"></div>
-                    <div className="absolute top-4 left-4">
-                       <span className="bg-primary text-on-primary text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full">In Transit</span>
-                    </div>
-                  </div>
-                  <div className="md:w-2/3 p-10 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-label uppercase tracking-widest text-stone-500">Order ID: AG-8842-X</span>
-                        <span className="text-xs font-label text-stone-500">June 14, 2024</span>
-                      </div>
-                      <h3 className="text-3xl font-headline font-semibold text-primary tracking-tight mb-4">Summer Root Collection</h3>
-                      <p className="text-on-surface-variant font-body leading-relaxed mb-6">A selection of seasonal root vegetables harvested at peak maturation from our North Valley plots.</p>
-                    </div>
-                    <div className="flex items-center justify-between pt-6 border-t border-outline-variant/10">
-                      <div className="flex -space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-surface-container-high border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold">1</div>
-                        <div className="w-8 h-8 rounded-full bg-surface-container-high border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold">2</div>
-                        <div className="w-8 h-8 rounded-full bg-primary-fixed border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold">+2</div>
-                      </div>
-                      <button className="flex items-center gap-2 group/btn">
-                        <span className="text-sm font-headline font-bold text-primary group-hover/btn:underline underline-offset-4 decoration-primary/30">TRACK SHIPMENT</span>
-                        <span className="material-symbols-outlined text-sm text-primary" data-icon="north_east">north_east</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Order Card 2 */}
-              <div className="group relative bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10 hover:scale-[1.01] transition-all duration-500">
-                <div className="flex flex-col md:flex-row h-full">
-                  <div className="md:w-1/3 relative h-64 md:h-auto overflow-hidden">
-                    <img alt="rich dark honeycomb dripping with golden honey on a textured ceramic plate with artisanal wooden honey dipper" className="w-full h-full object-cover grayscale-[0.2] group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMuK02jYd8i0ks-L_T_Sgm2es3pZXcQ8nLH8mur_eCO200TCLXxSlxEWecY2M7X0jhLcG6pzaTbh8Ay_N4q0d6Cm3DqDkHQEiQzZUjImYV1DrPKJUXvjr-GF1_kh4CcxRJdzKIZ4rmUH5Xg3-owcwJKMHDuVDyZiqBL5DQxAtRnWeXBNvTgFa2lvUDIQzrQn5JYAGjZ5SmquTOiH51KpqOXJsUHkn_dPn9W0ScE0M1zXZ-a0fNgusD9mkUasIJ50n06dFBvAbp7I4" />
-                    <div className="absolute inset-0 bg-secondary/10 mix-blend-multiply"></div>
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-surface-container-highest text-on-surface text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full border border-outline-variant/20">Preparing</span>
-                    </div>
-                  </div>
-                  <div className="md:w-2/3 p-10 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-label uppercase tracking-widest text-stone-500">Order ID: AG-9021-Y</span>
-                        <span className="text-xs font-label text-stone-500">June 12, 2024</span>
-                      </div>
-                      <h3 className="text-3xl font-headline font-semibold text-primary tracking-tight mb-4">Artisanal Pollen Reserve</h3>
-                      <p className="text-on-surface-variant font-body leading-relaxed mb-6">Cold-pressed wildflower honey and fresh royal jelly, sustainably extracted from our apiaries.</p>
-                    </div>
-                    <div className="flex items-center justify-between pt-6 border-t border-outline-variant/10 mt-auto">
-                      <span className="text-sm font-label font-medium text-secondary italic">Expected Arrival: June 18</span>
-                      <button className="flex items-center gap-2 group/btn">
-                        <span className="text-sm font-headline font-bold text-primary group-hover/btn:underline underline-offset-4 decoration-primary/30">MANAGE ORDER</span>
-                        <span className="material-symbols-outlined text-sm text-primary" data-icon="settings">settings</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
+            <div className="py-24 text-center border-2 border-dashed border-outline-variant/20 rounded-2xl bg-surface-container-lowest">
+               <span className="material-symbols-outlined text-5xl text-outline mb-4" data-icon="inventory_2">inventory_2</span>
+               <h4 className="text-2xl font-headline font-bold text-primary mb-2">No Harvests Yet</h4>
+               <p className="text-on-surface-variant font-light max-w-sm mx-auto">Your journey toward agricultural restoration hasn&apos;t begun yet. Visit our seasonal collection to start.</p>
+               <a href="/products" className="inline-block mt-8 px-8 py-3 bg-primary text-on-primary font-headline font-bold text-sm tracking-tight hover:bg-primary-light transition-colors rounded-full">
+                 EXPLORE COLLECTION
+               </a>
+            </div>
           )}
         </div>
 

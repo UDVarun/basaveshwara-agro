@@ -111,6 +111,42 @@ export async function customerAccountFetch<T>(
   return json.data!;
 }
 
+// ─── Admin logic ──────────────────────────────────────────────────────────────
+
+export async function shopifyAdminFetch<T>(
+  query: string,
+  variables?: Record<string, unknown>
+): Promise<T> {
+  const domain = process.env["SHOPIFY_STORE_DOMAIN_URL"];
+  const token = process.env["SHOPIFY_ADMIN_ACCESS_TOKEN"];
+
+  if (!domain || !token) {
+    // If no admin token, we fail gracefully with a log
+    console.warn("Missing SHOPIFY_ADMIN_ACCESS_TOKEN. Orders will not sync to Shopify Admin.");
+    throw new Error("Missing Admin Token");
+  }
+
+  const endpoint = `https://${domain}/admin/api/2025-01/graphql.json`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": token,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const json = await response.json();
+
+  if (json.errors) {
+    console.error("[shopify-admin] GraphQL errors:", json.errors);
+    throw new Error("Shopify Admin GraphQL error");
+  }
+
+  return json.data;
+}
+
 // ─── Customer ─────────────────────────────────────────────────────────────────
 
 export async function getCustomer(accessToken: string) {
@@ -237,4 +273,139 @@ export async function removeCartLines(
     cartLinesRemove: { cart: ShopifyCart; userErrors: ShopifyUserError[] };
   }>(CART_LINES_REMOVE_MUTATION, { cartId, lineIds });
   return data.cartLinesRemove;
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+export async function createShopifyDraftOrder(params: {
+  email: string;
+  lines: Array<{ variantId: string; quantity: number }>;
+  shippingAddress: any;
+}) {
+  const DRAFT_ORDER_CREATE_MUTATION = `
+    mutation draftOrderCreate($input: DraftOrderInput!) {
+      draftOrderCreate(input: $input) {
+        draftOrder {
+          id
+          name
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const input = {
+    email: params.email,
+    lineItems: params.lines.map((l) => ({
+      variantId: l.variantId,
+      quantity: l.quantity,
+    })),
+    shippingAddress: {
+      firstName: params.shippingAddress.firstName,
+      lastName: params.shippingAddress.lastName,
+      address1: params.shippingAddress.address1,
+      city: params.shippingAddress.city,
+      province: params.shippingAddress.state,
+      zip: params.shippingAddress.zip,
+      country: "India", // Default or from params
+    },
+  };
+
+  const data = await shopifyAdminFetch<{
+    draftOrderCreate: { draftOrder: any; userErrors: any[] };
+  }>(DRAFT_ORDER_CREATE_MUTATION, { input });
+
+  return data.draftOrderCreate;
+}
+
+// Completes a draft order and marks it as an Order (Admin API)
+export async function completeDraftOrder(id: string) {
+  const DRAFT_ORDER_COMPLETE_MUTATION = `
+    mutation draftOrderComplete($id: ID!) {
+      draftOrderComplete(id: $id) {
+        draftOrder {
+          order {
+            id
+            name
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const data = await shopifyAdminFetch<{
+    draftOrderComplete: { draftOrder: any; userErrors: any[] };
+  }>(DRAFT_ORDER_COMPLETE_MUTATION, { id });
+
+  return data.draftOrderComplete;
+}
+// Fetch orders for a specific email via Admin API
+export async function getOrdersByEmail(email: string) {
+  const ORDERS_QUERY = `
+    query getOrders($query: String!) {
+      orders(first: 10, query: $query) {
+        edges {
+          node {
+            id
+            name
+            processedAt
+            displayFulfillmentStatus
+            totalPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
+            lineItems(first: 5) {
+              edges {
+                node {
+                  title
+                  quantity
+                  image {
+                    url
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await shopifyAdminFetch<{ orders: { edges: any[] } }>(
+      ORDERS_QUERY,
+      { query: `email:"${email}"` }
+    );
+    // Transform Admin API format to match what the UI expects
+    return data.orders.edges.map(edge => ({
+      node: {
+        ...edge.node,
+        fulfillmentStatus: edge.node.displayFulfillmentStatus,
+        totalPrice: {
+          amount: edge.node.totalPriceSet.shopMoney.amount,
+          currencyCode: edge.node.totalPriceSet.shopMoney.currencyCode
+        },
+        lineItems: {
+          edges: edge.node.lineItems.edges.map((lineEdge: any) => ({
+            node: {
+              ...lineEdge.node,
+              image: lineEdge.node.image || null
+            }
+          }))
+        }
+      }
+    }));
+  } catch (error) {
+    console.error("[shopify-admin] getOrdersByEmail failed:", error);
+    return []; // Graceful failure
+  }
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, ArrowRight } from "lucide-react";
+import { ShoppingCart, ArrowRight, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/format";
 import type { ShopifyProduct, ShopifyProductVariant } from "@/types/shopify";

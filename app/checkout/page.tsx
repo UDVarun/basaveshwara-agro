@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { formatPrice } from "@/lib/format";
+import { formatPaisePrice } from "@/lib/format";
 import { 
   ShieldCheck, 
   Lock, 
@@ -13,10 +13,10 @@ import {
   QrCode,
   CreditCard,
   Banknote,
-  Verified,
-  Library,
-  Sprout,
-  Egg,
+  BadgeCheck, 
+  Library, 
+  Sprout, 
+  Egg, 
   Truck
 } from "lucide-react";
 import Link from "next/link";
@@ -27,16 +27,66 @@ export default function CheckoutPage() {
   const { state, subtotal } = useCart();
   const { items, isHydrated } = state;
 
+  const [formData, setFormData] = useState({
+    fname: "",
+    lname: "",
+    address: "",
+    city: "",
+    pincode: "",
+    phone: "",
+  });
+  const [errors, setErrors] = useState<string[]>([]);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [isBillingSame, setIsBillingSame] = useState(true);
+  const [shake, setShake] = useState(false);
+
+  // Shake animation variant
+  const shakeVariants = {
+    shake: {
+      x: [0, -10, 10, -10, 10, 0],
+      transition: { duration: 0.4 }
+    }
+  };
 
   // Financial calculations
-  const shippingCharge = 850; // Mock: $8.50 scaled for ₹
-  const taxCharge = 420; // Mock: $4.20 scaled for ₹
+  const shippingCharge = 85000; // ₹850 in paise
+  const taxCharge = 42000; // ₹420 in paise
   const totalCharge = subtotal + shippingCharge + taxCharge;
 
   const handlePlaceOrder = async () => {
+    // 1. Validation Logic
+    const missingFields = Object.entries(formData)
+      .filter(([_, value]) => !value.trim())
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      setErrors(missingFields);
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      document.getElementById(missingFields[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Persist shipping info for the specialized payment sub-pages
+    sessionStorage.setItem("agro_shipping", JSON.stringify(formData));
+
+    // Conditional Routing based on selected Payment Method
+    if (paymentMethod === "upi") {
+      router.push("/checkout/payment/upi");
+      return;
+    }
+
+    if (paymentMethod === "card") {
+      router.push("/checkout/payment/card");
+      return;
+    }
+
+    if (paymentMethod === "cod") {
+      router.push("/checkout/payment/cod");
+      return;
+    }
+
     setIsPlacingOrder(true);
     
     try {
@@ -62,9 +112,6 @@ export default function CheckoutPage() {
       const data = await response.json();
       
       if (data.checkoutUrl) {
-        // We'll redirect to the local success page for now as per the "Success UI" requirement
-        // In a real Shopify flow, we'd redirect to data.checkoutUrl
-        // But for this institutional portal, we want the success screen:
         router.push("/checkout/success");
       } else {
         throw new Error("No checkout URL returned");
@@ -124,7 +171,11 @@ export default function CheckoutPage() {
                 <h2 className="text-4xl font-headline font-bold tracking-tight text-[#004534]">Shipping Information</h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+              <motion.div 
+                animate={shake ? "shake" : ""}
+                variants={shakeVariants}
+                className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10"
+              >
                 {[
                   { id: "fname", label: "First Name", placeholder: "Farmer" },
                   { id: "lname", label: "Last Name", placeholder: "Gowda" },
@@ -137,18 +188,29 @@ export default function CheckoutPage() {
                     <input 
                       type="text" 
                       id={field.id}
+                      value={formData[field.id as keyof typeof formData]}
+                      onChange={(e) => {
+                        setFormData({ ...formData, [field.id]: e.target.value });
+                        if (errors.includes(field.id)) {
+                          setErrors(errors.filter(id => id !== field.id));
+                        }
+                      }}
                       placeholder=" "
-                      className="block w-full px-0 py-4 bg-transparent border-0 border-b-2 border-[#bec9c2] focus:border-[#004534] focus:ring-0 transition-all peer font-medium"
+                      className={`block w-full px-0 py-4 bg-transparent border-0 border-b-2 transition-all peer font-medium ${
+                        errors.includes(field.id) ? "border-amber-600" : "border-[#bec9c2]"
+                      } focus:border-[#004534] focus:ring-0`}
                     />
                     <label 
                       htmlFor={field.id}
-                      className="absolute left-0 top-4 text-[#6f7973] pointer-events-none transition-all duration-200 origin-left peer-focus:-translate-y-6 peer-focus:scale-[0.85] peer-focus:text-[#004534] peer-[:not(:placeholder-shown)]:-translate-y-6 peer-[:not(:placeholder-shown)]:scale-[0.85]"
+                      className={`absolute left-0 top-4 pointer-events-none transition-all duration-200 origin-left peer-focus:-translate-y-6 peer-focus:scale-[0.85] peer-focus:text-[#004534] peer-[:not(:placeholder-shown)]:-translate-y-6 peer-[:not(:placeholder-shown)]:scale-[0.85] ${
+                        errors.includes(field.id) ? "text-amber-600" : "text-[#6f7973]"
+                      }`}
                     >
-                      {field.label}
+                      {field.label} {errors.includes(field.id) && "— Required"}
                     </label>
                   </div>
                 ))}
-              </div>
+              </motion.div>
 
               <div className="mt-12 flex items-center gap-4 group cursor-pointer" onClick={() => setIsBillingSame(!isBillingSame)}>
                 <div className={`relative w-12 h-6 rounded-full transition-colors ${isBillingSame ? "bg-[#004534]" : "bg-[#f0e6e0]"}`}>
@@ -231,7 +293,7 @@ export default function CheckoutPage() {
                     <div className="flex flex-col justify-center">
                       <h4 className="font-headline font-bold text-[#1f1b17] group-hover:text-[#004534] transition-colors line-clamp-1">{item.title}</h4>
                       <p className="text-xs text-[#3f4944] mb-2 uppercase tracking-widest font-semibold opacity-60">Qty: {item.quantity} • Institutional</p>
-                      <p className="font-bold text-[#004534]">{formatPrice(item.price * item.quantity)}</p>
+                      <p className="font-bold text-[#004534]">{formatPaisePrice(item.price * item.quantity, "INR")}</p>
                     </div>
                   </div>
                 ))}
@@ -240,19 +302,19 @@ export default function CheckoutPage() {
               <div className="space-y-5 pt-10 border-t border-[#bec9c2]/30">
                 <div className="flex justify-between items-center text-[#3f4944] font-medium">
                   <span>Subtotal</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span>{formatPaisePrice(subtotal, "INR")}</span>
                 </div>
                 <div className="flex justify-between items-center text-[#3f4944] font-medium">
                   <span>Sustainable Shipping</span>
-                  <span>{formatPrice(shippingCharge)}</span>
+                  <span>{formatPaisePrice(shippingCharge, "INR")}</span>
                 </div>
                 <div className="flex justify-between items-center text-[#3f4944] font-medium">
                   <span>Agricultural Tax</span>
-                  <span>{formatPrice(taxCharge)}</span>
+                  <span>{formatPaisePrice(taxCharge, "INR")}</span>
                 </div>
                 <div className="flex justify-between items-center pt-8 text-3xl font-headline font-black text-[#004534] tracking-tighter">
                   <span>Total</span>
-                  <span>{formatPrice(totalCharge)}</span>
+                  <span>{formatPaisePrice(totalCharge, "INR")}</span>
                 </div>
               </div>
 
