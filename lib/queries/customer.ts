@@ -35,6 +35,9 @@ export const CUSTOMER_QUERY = `
                 node {
                   title
                   quantity
+                  image {
+                    url
+                  }
                 }
               }
             }
