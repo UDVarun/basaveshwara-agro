@@ -41,6 +41,7 @@ export default function SuccessPage() {
       const timer = setTimeout(() => clearCart(), 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [clearCart, state.items.length]);
 
   const formatPrice = (priceInPaise: number) =>

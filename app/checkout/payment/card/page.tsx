@@ -84,8 +84,9 @@ export default function CardPaymentPage() {
       const timer = setTimeout(() => {
         setCardName("MASTERCARD ELITE");
      }, 800);
-     return () => clearTimeout(timer);
+      return () => clearTimeout(timer);
     }
+    return undefined;
   }, [cardNumber]);
 
   useEffect(() => {
@@ -120,8 +121,8 @@ export default function CardPaymentPage() {
     const validateExpiryDate = (val: string) => {
       const parts = val.split('/');
       if (parts.length !== 2) return false;
-      const m = parseInt(parts[0]);
-      const y = parseInt(parts[1]);
+      const m = parseInt(parts[0]!);
+      const y = parseInt(parts[1]!);
       if (isNaN(m) || isNaN(y) || m < 1 || m > 12) return false;
       
       const now = new Date();
@@ -256,9 +257,8 @@ export default function CardPaymentPage() {
             <div className="relative w-full aspect-[1.586/1] max-w-md mx-auto group">
               <motion.div 
                 variants={shakeVariants}
-                animate={shake ? "shake" : ""}
+                animate={shake ? "shake" : { rotateY: 0, opacity: 1 }}
                 initial={{ rotateY: -10, opacity: 0 }}
-                animate={{ rotateY: 0, opacity: 1 }}
                 className="absolute inset-0 bg-[#004534] rounded-[2rem] overflow-hidden shadow-2xl transition-transform duration-500 transform group-hover:scale-[1.02]"
               >
                 {/* Decorative Abstract Background */}

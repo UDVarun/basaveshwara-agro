@@ -260,6 +260,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const timer = setTimeout(syncWithServer, 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [state.items, state.isHydrated, status]);
 
   const addItem = useCallback(

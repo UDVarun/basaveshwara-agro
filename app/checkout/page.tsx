@@ -64,7 +64,7 @@ export default function CheckoutPage() {
       setErrors(missingFields);
       setShake(true);
       setTimeout(() => setShake(false), 400);
-      document.getElementById(missingFields[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(missingFields[0]!)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 

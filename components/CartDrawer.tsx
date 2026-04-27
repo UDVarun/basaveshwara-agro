@@ -161,7 +161,7 @@ export default function CartDrawer() {
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-widest text-agro-muted opacity-60">Sub-Total Depot</span>
                     <span className="text-[13px] font-headline font-bold text-agro-ink tracking-tight">
-                      {formatPrice(subtotal.toString(), items[0]?.currencyCode)}
+                      {formatPrice(subtotal.toString(), items[0]?.currencyCode || "INR")}
                     </span>
                   </div>
                   
@@ -174,7 +174,7 @@ export default function CartDrawer() {
                     </div>
                     <div className="text-right">
                       <span className="text-3xl font-headline font-bold text-agro-ink tracking-tighter leading-none">
-                        {formatPrice(subtotal.toString(), items[0]?.currencyCode)}
+                        {formatPrice(subtotal.toString(), items[0]?.currencyCode || "INR")}
                       </span>
                     </div>
                   </div>

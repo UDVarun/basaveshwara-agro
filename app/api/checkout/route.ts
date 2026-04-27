@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       console.error("[checkout-api] Shopify user errors:", JSON.stringify(userErrors, null, 2));
       return NextResponse.json(
         { 
-          message: userErrors[0].message || "Checkout is temporarily unavailable.",
+          message: userErrors[0]?.message || "Checkout is temporarily unavailable.",
           details: userErrors 
         },
         { status: 422 }
