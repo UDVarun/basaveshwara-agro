@@ -38,8 +38,46 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    router.push("/checkout/success");
+    
+    try {
+      console.log("[checkout] Initializing order with items:", state.items.length);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: state.items }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to initialize checkout");
+      }
+
+      const data = await response.json();
+      
+      if (data.checkoutUrl) {
+        // We'll redirect to the local success page for now as per the "Success UI" requirement
+        // In a real Shopify flow, we'd redirect to data.checkoutUrl
+        // But for this institutional portal, we want the success screen:
+        router.push("/checkout/success");
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("[checkout] Error placing order:", err);
+      alert(err.name === "AbortError" 
+        ? "The request timed out. Please check your connection." 
+        : err.message || "Something went wrong. Please try again."
+      );
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   if (!isHydrated) return null;
