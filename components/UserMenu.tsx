@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, LogOut, Settings, ChevronDown } from "lucide-react";
+import { User, LogOut, Settings, ChevronDown, Package } from "lucide-react";
 
 export default function UserMenu() {
   const { data: session } = useSession();
@@ -84,14 +84,28 @@ export default function UserMenu() {
               <Link
                 href="/profile"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-4 px-4 py-3 rounded-2xl text-stone-600 hover:bg-primary/5 hover:text-primary transition-all group lg:min-w-0"
+                className="flex items-center gap-4 px-4 py-3 rounded-2xl text-stone-600 hover:bg-primary/5 hover:text-primary transition-all group"
               >
                 <div className="w-10 h-10 rounded-xl bg-stone-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                    <User className="w-5 h-5 opacity-40 group-hover:opacity-100" />
                 </div>
                 <div className="flex flex-col">
                    <span className="text-[12px] font-black uppercase tracking-tight">Your Account</span>
-                   <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Profile & Orders</span>
+                   <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Profile Settings</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/profile?tab=orders"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-4 px-4 py-3 rounded-2xl text-stone-600 hover:bg-primary/5 hover:text-primary transition-all group lg:min-w-0"
+              >
+                <div className="w-10 h-10 rounded-xl bg-stone-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                   <Package className="w-5 h-5 opacity-40 group-hover:opacity-100" />
+                </div>
+                <div className="flex flex-col">
+                   <span className="text-[12px] font-black uppercase tracking-tight">My Orders</span>
+                   <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Order History</span>
                 </div>
               </Link>
 
