@@ -23,10 +23,35 @@ export default function CheckoutPage() {
     setIsPlacingOrder(true);
     setCheckoutError("");
 
-    // Simulate a brief processing time to make it feel premium
-    setTimeout(() => {
-      router.push("/checkout/success");
-    }, 1500);
+    try {
+      // Build the item list for the server — keep Shopify token server-side
+      const checkoutItems = items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+      }));
+
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: checkoutItems }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.checkoutUrl) {
+        setCheckoutError(
+          data.error || "Something went wrong. Please try again."
+        );
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      // Redirect to Shopify's secure checkout page
+      window.location.href = data.checkoutUrl;
+    } catch {
+      setCheckoutError("Network error. Please check your connection.");
+      setIsPlacingOrder(false);
+    }
   };
 
   const formattedPrice = (priceInPaise: number) =>
@@ -254,7 +279,7 @@ export default function CheckoutPage() {
                     >
                       sync
                     </motion.span>
-                    Finalizing Procurement...
+                    Redirecting to Shopify...
                   </>
                 ) : (
                   <>
