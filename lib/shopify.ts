@@ -53,7 +53,7 @@ export async function shopifyFetch<T>(
       "X-Shopify-Storefront-Access-Token": token,
     },
     body: JSON.stringify({ query, variables }),
-    next: { revalidate: 60 },
+    cache: "no-store",
     // Fail fast — abort if Shopify doesn't respond in 5s (e.g. wrong domain)
     signal: AbortSignal.timeout(5000),
   });

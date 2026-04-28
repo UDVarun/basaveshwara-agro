@@ -5,6 +5,8 @@ import { getProducts } from "@/lib/shopify";
 import ProductCard from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 
+export const revalidate = 60; // Refresh product list from Shopify every 60 seconds
+
 export const metadata: Metadata = {
   title: "Products - Basaveshwara Agro",
   description: "Browse fertilizers, pesticides, micronutrient blends, and organic compost available at Sri Basaveshwara Agro Kendra, Chikkamagaluru.",

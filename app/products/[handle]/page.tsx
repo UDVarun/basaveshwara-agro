@@ -25,7 +25,7 @@ interface PageParams {
   params: Promise<{ handle: string }>;
 }
 
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function generateStaticParams() {
   try {
